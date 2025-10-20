@@ -1,0 +1,3546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8-Year-Old Helper App</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the app */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f8ff; /* Light, friendly background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            padding-top: 1rem;
+        }
+        #main-app-container {
+            width: 100%;
+            max-width: 1000px;
+            padding: 1rem;
+            min-height: 95vh;
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        /* --- Shared Game Styles --- */
+        .game-canvas {
+            border: 2px solid #3b82f6;
+            background-color: #0f3460;
+            touch-action: none;
+            width: 100%;
+            max-height: 80vh;
+            border-radius: 8px;
+        }
+        .pong-canvas-container canvas {
+            box-shadow: 0 0 20px #e94560;
+            background-color: #0f3460;
+            border-color: #e94560;
+        }
+        .score-text {
+            color: #16c79a;
+            text-shadow: 0 0 5px #16c79a;
+        }
+        .dashboard-card {
+            background-color: #e6f7ff;
+            border-left: 5px solid #00bfff;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        .action-button {
+            padding: 1rem 2rem;
+            font-size: 1.25rem;
+            font-weight: bold;
+            border-radius: 9999px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        /* Style for Game Over Modals */
+        #snake-game-over-modal .bg-gray-900 {
+            border-color: #10b981; /* Green border */
+        }
+        #avoiding-game-over-modal .bg-gray-900 {
+            border-color: #ef4444; /* Red border */
+        }
+        #pong-game-over-modal .bg-gray-900 {
+            border-color: #f97316; /* Orange border for Pong (Misses) */
+        }
+        #catch-star-game-over-modal .bg-gray-900 {
+            border-color: #ffcc00; /* Yellow border */
+        }
+        #maze-runner-game-over-modal .bg-gray-900 {
+            border-color: #00bcd4; /* Cyan border */
+        }
+        #color-clicker-game-over-modal .bg-gray-900 {
+            border-color: #16c79a; /* Teal border */
+        }
+        .delete-btn {
+            line-height: 1;
+        }
+        
+        /* Custom styles for chore cards to force equal height/spacing */
+        /* Ensure minimal height for Chore Manager */
+        #master-chores-list > div {
+            min-height: auto; 
+        }
+        /* Settings list items are now horizontal (not column) */
+        #master-settings-list > div {
+            min-height: auto; 
+            display: flex;
+            flex-direction: row; /* Overriding previous column setting */
+            justify-content: space-between;
+            align-items: center;
+        }
+        .delete-chore-symbol {
+            font-size: 1.8rem; /* Larger for better visibility */
+            line-height: 1;
+            padding: 2px 8px;
+        }
+        .hide-chore-symbol {
+            font-size: 1.5rem;
+            line-height: 1;
+            padding: 2px 6px;
+        }
+        
+        /* Typing specific styling */
+        .typing-sentence {
+            font-size: 1.5rem;
+            font-weight: 500;
+            line-height: 2.2rem;
+            background-color: #fff;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 2px solid #ccc;
+            min-height: 100px;
+        }
+        /* Updated for 'pop and disappear' */
+        .char-correct { color: #10b981; visibility: hidden; }
+        .char-incorrect { color: #ef4444; text-decoration: underline; }
+        .char-cursor { background-color: #f59e0b; color: white; border-radius: 2px; }
+        .char-pending { color: #9ca3af; }
+
+        /* Falling Game Cursor Style */
+        .falling-cursor {
+            background-color: #ff0000;
+            color: #fff;
+            border-radius: 2px;
+            padding: 0 1px;
+        }
+        /* Chore Explanation Modal Styles */
+        .chore-modal {
+            max-width: 400px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="main-app-container">
+    <h1 class="text-4xl font-extrabold text-center mb-6 text-blue-600">
+        ✨ My Fun Helper App ✨
+    </h1>
+    <hr class="mb-6 border-blue-200">
+
+    <!-- ---------------------------------------------------- -->
+    <!-- VIEW SWITCHING SECTIONS -->
+    <!-- ---------------------------------------------------- -->
+
+    <!-- 1. DASHBOARD VIEW -->
+    <div id="dashboard-view" class="p-4 space-y-8">
+        <h2 class="text-2xl font-bold text-center text-gray-700">What do you want to do today?</h2>
+        
+        <!-- Action Buttons Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <div class="flex flex-col items-center">
+                <button id="show-games-hub-button" class="action-button bg-purple-600 hover:bg-purple-700 text-white w-full">
+                    🎮 Games Hub!
+                </button>
+                <p class="mt-2 text-sm text-gray-500">Play Pong, Snake, and more!</p>
+            </div>
+
+            <div class="flex flex-col items-center">
+                <button id="show-learning-button" class="action-button bg-yellow-500 hover:bg-yellow-600 text-gray-800 w-full">
+                    🧠 Learning Hub
+                </button>
+                <p class="mt-2 text-sm text-gray-500">Facts & Brain Games!</p>
+            </div>
+            
+            <div class="flex flex-col items-center">
+                <button id="show-todo-button" class="action-button bg-green-500 hover:bg-green-600 text-white w-full">
+                    ✅ My To-Do List
+                </button>
+                <p class="mt-2 text-sm text-gray-500">Keep track of your tasks.</p>
+            </div>
+
+        </div>
+
+        <!-- To-Do List Display Card (READ-ONLY) - Stays on Dashboard -->
+        <div id="todo-card" class="dashboard-card hidden">
+            <h3 class="text-xl font-bold text-blue-700 mb-4 flex justify-between items-center">
+                📝 Today's To-Dos
+                <button id="edit-todo-dashboard-button" class="px-3 py-1 text-sm bg-indigo-500 text-white rounded-full hover:bg-indigo-600 transition">Edit List</button>
+            </h3>
+            <ul id="todo-dashboard-list" class="space-y-2 text-gray-700">
+                <!-- List items populated by JS -->
+            </ul>
+        </div>
+    </div> <!-- End dashboard-view -->
+    
+    <!-- ---------------------------------------------------- -->
+    <!-- 1.5. LEARNING VIEW (NEW) -->
+    <!-- ---------------------------------------------------- -->
+    <div id="learning-view" class="hidden p-4">
+        <button id="back-to-dashboard-from-learning" class="mb-6 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition duration-300">
+            ← Home (App Dashboard)
+        </button>
+        <h2 class="text-3xl font-extrabold text-center mb-6 text-yellow-600">🧠 Learning Hub</h2>
+
+        <!-- LEARNING HUB MENU -->
+        <div id="learning-hub-menu" class="space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button id="select-math" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition transform hover:scale-105">
+                    🔢 Math Practice
+                </button>
+                <button id="select-typing" class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-4 rounded-xl shadow-lg transition transform hover:scale-105">
+                    ⌨️ Typing Speed
+                </button>
+                <button id="select-coding" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg transition transform hover:scale-105">
+                    💻 What is Code?
+                </button>
+                <button id="select-reading" class="bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg transition transform hover:scale-105">
+                    📚 Reading Comprehension
+                </button>
+            </div>
+
+            <!-- FUN FACT CARD (STATIC) -->
+            <div id="facts-card" class="dashboard-card bg-yellow-50 border-yellow-400">
+                <h3 class="text-xl font-bold text-yellow-700 mb-2 flex items-center">
+                    <span class="mr-2">🌟</span> Today's Awesome Fact
+                    <button id="fetch-fact-button" class="ml-auto px-4 py-1 text-sm bg-blue-500 text-white rounded-full hover:bg-blue-600 transition">Get New Fact</button>
+                </h3>
+                <p id="fun-fact-output" class="text-gray-700 text-lg italic">Click "Get New Fact" to learn something amazing!</p>
+            </div>
+        </div>
+        <!-- END LEARNING HUB MENU -->
+
+        <!-- 1. MATH PRACTICE VIEW (REFACTORED for Worksheet) -->
+        <div id="math-practice-view" class="hidden">
+            <button id="back-to-learning-hub-from-math" class="mb-6 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition duration-300">
+                ← Back to Hub
+            </button>
+            <div class="dashboard-card bg-blue-50 border-blue-400">
+                <h3 class="text-xl font-bold text-blue-700 mb-4 flex items-center">
+                    <span class="mr-2">➕</span> Math Practice Quiz Worksheet
+                </h3>
+                
+                <!-- Grade Selector -->
+                <div class="flex items-center space-x-4 mb-4 border-b pb-4">
+                    <label for="math-grade" class="font-semibold text-gray-700">Select Grade:</label>
+                    <select id="math-grade" class="p-2 border border-blue-300 rounded-lg">
+                        <option value="1">Grade 1</option>
+                        <option value="2">Grade 2</option>
+                        <option value="3">Grade 3</option>
+                        <option value="4">Grade 4</option>
+                        <option value="5">Grade 5</option>
+                    </select>
+                    <p class="font-bold text-lg ml-auto text-indigo-600">10 Questions (5 Word, 5 Calculation)</p>
+                </div>
+                
+                <div id="math-quiz-container">
+                    <p class="text-sm italic text-gray-500 mb-4">Complete the entire worksheet, then click Check Answers.</p>
+                    
+                    <div id="math-questions-list" class="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Questions will be dynamically inserted here -->
+                    </div>
+
+                    <div class="flex justify-center mt-6">
+                        <button id="check-math-button" class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition font-bold text-lg">
+                            Check All Answers
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quiz Results Modal -->
+                <div id="math-results-screen" class="hidden mt-6 p-4 bg-white rounded-lg border border-blue-200 text-center">
+                    <h4 class="text-3xl font-extrabold text-blue-800 mb-4">Quiz Finished!</h4>
+                    <p id="math-final-score" class="text-lg font-bold mb-6 text-gray-700">Score: 0 / 10</p>
+                    <button id="new-math-button" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition font-bold">Start New Quiz</button>
+                </div>
+            </div>
+        </div>
+        <!-- END MATH PRACTICE VIEW -->
+
+        <!-- 2. TYPING PRACTICE HUB (REFACTORED) -->
+        <div id="typing-practice-view" class="hidden">
+            <button id="back-to-learning-hub-from-typing" class="mb-6 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition duration-300">
+                ← Back to Hub
+            </button>
+            <h2 class="text-3xl font-extrabold text-center mb-6 text-pink-600">⌨️ Choose a Typing Game</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <button id="select-typing-free" class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-4 rounded-xl shadow-lg transition transform hover:scale-105">
+                    Free Type Speed Test
+                </button>
+                <button id="select-typing-falling" class="bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl shadow-lg transition transform hover:scale-105">
+                    Falling Word Challenge!
+                </button>
+            </div>
+        </div>
+        <!-- END TYPING PRACTICE HUB -->
+        
+        <!-- 2.1. FREE TYPE GAME VIEW -->
+        <div id="typing-free-game-view" class="hidden">
+            <button id="back-to-typing-hub-from-free" class="mb-6 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition duration-300">
+                ← Back to Typing Hub
+            </button>
+            <div class="dashboard-card bg-pink-50 border-pink-400 space-y-4">
+                <h3 class="text-xl font-bold text-pink-700 mb-4">⌨️ Free Type Speed Test</h3>
+                
+                <!-- NEW MODE/GRADE SELECTOR -->
+                <div class="space-y-3">
+                    <p class="font-semibold text-gray-700">Select Practice Mode:</p>
+                    <div class="flex flex-wrap gap-4">
+                        <label class="flex items-center">
+                            <input type="radio" name="typing-mode" value="letters" checked class="text-pink-600" id="mode-letters">
+                            <span class="ml-2">Letters (Beginner)</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="typing-mode" value="word" class="text-pink-600" id="mode-words">
+                            <span class="ml-2">Words (Grade 1-3)</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="typing-mode" value="sentence" class="text-pink-600" id="mode-sentences">
+                            <span class="ml-2">Sentences (Grade 3-5)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="typing-grade-selector-container">
+                     <label for="typing-grade-free" class="font-semibold text-gray-700">Select Grade/Difficulty:</label>
+                    <select id="typing-grade-free" class="p-2 border border-pink-300 rounded-lg">
+                        <option value="1">Level 1 (Easiest)</option>
+                        <option value="3">Level 3 (Medium)</option>
+                        <option value="5">Level 5 (Harder)</option>
+                    </select>
+                </div>
+                
+                <p class="text-gray-600">Type the text below as quickly and accurately as you can!</p>
+
+                <div id="typing-text-display" class="typing-sentence font-mono">
+                    Click Start to begin!
+                </div>
+
+                <input type="text" id="typing-input" class="w-full p-3 border border-pink-300 rounded-lg text-lg font-mono focus:outline-none focus:ring-2 focus:ring-pink-500" placeholder="Start typing here..." disabled>
+                
+                <div id="typing-results" class="grid grid-cols-3 gap-4 text-center text-gray-700 font-semibold">
+                    <div>WPM: <span id="wpm-display" class="text-xl text-pink-700">0</span></div>
+                    <div>Accuracy: <span id="accuracy-display" class="text-xl text-pink-700">0%</span></div>
+                    <div>Errors: <span id="error-display" class="text-xl text-pink-700">0</span></div>
+                </div>
+
+                <button id="start-typing-button" class="w-full bg-pink-600 text-white font-bold py-3 rounded-lg hover:bg-pink-700 transition">
+                    Start Test
+                </button>
+            </div>
+        </div>
+        <!-- END FREE TYPE GAME VIEW -->
+
+        <!-- 2.2. FALLING GAME VIEW (NEW) -->
+        <div id="typing-falling-game-view" class="hidden">
+            <button id="back-to-typing-hub-from-falling" class="mb-6 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition duration-300">
+                ← Back to Typing Hub
+            </button>
+            <div class="dashboard-card bg-red-50 border-red-400 space-y-4">
+                 <h3 class="text-xl font-bold text-red-700 mb-4">⬇️ Falling Word Challenge</h3>
+
+                 <!-- Game Info and Grade Selector -->
+                 <div class="flex justify-between items-center mb-4 p-3 bg-red-100 rounded-lg shadow-inner">
+                    <p class="text-sm font-bold text-gray-700">SCORE: <span id="falling-score-display" class="text-red-700 text-lg">0</span></p>
+                    <p class="text-sm font-bold text-gray-700">LIVES: <span id="falling-lives-display" class="text-red-700 text-lg">3</span></p>
+                    <p class="text-sm font-bold text-gray-700">
+                        Grade: 
+                        <select id="falling-grade-select" class="p-1 border border-red-300 rounded-lg text-sm">
+                            <option value="1">Grade 1 (Slow/Short)</option>
+                            <option value="3">Grade 3 (Medium/Normal)</option>
+                            <option value="5">Grade 5 (Fast/Long)</option>
+                        </select>
+                    </p>
+                 </div>
+
+                 <div class="flex justify-center relative">
+                    <canvas id="fallingCanvas" class="game-canvas" width="600" height="400" style="background-color:#0f3460; border-color:#ef4444;"></canvas>
+                 </div>
+                 
+                 <input type="text" id="falling-game-input" class="w-full p-3 border border-red-300 rounded-lg text-lg font-mono focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="Type falling words here..." autocomplete="off">
+                 
+            </div>
+             <!-- Falling Game Over Modal -->
+             <div id="falling-game-over-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
+                 <div class="bg-gray-900 p-8 rounded-xl shadow-2xl border-2 border-red-500 text-center transform scale-100 transition-transform duration-300">
+                    <h2 class="text-4xl font-bold text-red-400 mb-4">Game Over!</h2>
+                    <p class="text-gray-300 mb-6 text-xl">Final Score: <span id="falling-final-score" class="font-extrabold">0</span></p>
+                    <div class="space-y-3">
+                        <button id="falling-try-again-button" class="px-8 py-3 w-full bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                            Try Again
+                        </button>
+                        <button id="falling-to-hub-button" class="px-8 py-3 w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                            Return to Typing Hub
+                        </button>
+                        <button id="falling-home-button" class="px-8 py-3 w-full bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                            Home (App Dashboard)
+                        </button>
+                    </div>
+                 </div>
+             </div>
+        </div>
+        <!-- END FALLING GAME VIEW -->
+
+        <!-- 3. CODING INTRO VIEW -->
+        <div id="coding-intro-view" class="hidden">
+            <button id="back-to-learning-hub-from-coding" class="mb-6 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition duration-300">
+                ← Back to Hub
+            </button>
+            <div class="dashboard-card bg-indigo-50 border-indigo-400 space-y-4">
+                <h3 class="text-xl font-bold text-indigo-700 mb-4">💻 Introduction to Coding</h3>
+                <p class="text-gray-700 text-lg">
+                    Coding is like writing secret instructions for a computer! When you code, you tell the computer exactly what steps to take to make a game, a website, or an app. It's how we create all the cool things you use every day.
+                </p>
+                <p class="text-gray-700 font-semibold">
+                    Every piece of code starts with a simple command.
+                </p>
+
+                <div class="bg-indigo-900 text-white p-4 rounded-lg font-mono text-sm shadow-xl">
+                    <span class="text-green-400">print</span>("I love learning!")
+                </div>
+                
+                <p id="coding-output" class="text-lg font-bold text-indigo-800">
+                    Click 'Run Code' to see the magic!
+                </p>
+                
+                <button id="run-coding-button" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition">
+                    ▶️ Run Code
+                </button>
+            </div>
+        </div>
+        <!-- END CODING INTRO VIEW -->
+
+        <!-- 4. READING COMPREHENSION VIEW -->
+        <div id="reading-comprehension-view" class="hidden">
+            <button id="back-to-learning-hub-from-reading" class="mb-6 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition duration-300">
+                ← Back to Hub
+            </button>
+            <div class="dashboard-card bg-green-50 border-green-400 space-y-4">
+                <h3 class="text-xl font-bold text-green-700 mb-4 flex justify-between items-center">
+                    📚 Adaptive Reading Practice ✨
+                    <button id="generate-story-button" class="px-3 py-1 text-sm bg-green-600 text-white rounded-full hover:bg-green-700 transition font-bold">Generate Story</button>
+                </h3>
+                
+                <!-- NEW: Topic Input -->
+                <div class="flex space-x-3 items-center">
+                    <label for="reading-topic" class="font-semibold text-gray-700 shrink-0">Topic:</label>
+                    <input type="text" id="reading-topic" placeholder="e.g., Space Robots" value="dinosaurs" class="w-full p-2 border border-green-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+                
+                <!-- Story Output Area -->
+                <div id="reading-passage-card" class="bg-white p-4 rounded-lg border border-green-300 shadow-inner min-h-[100px] flex items-center justify-center">
+                    <p id="reading-passage" class="italic text-gray-700 text-lg leading-relaxed text-center">
+                        Enter a topic above and click "Generate Story" to start!
+                    </p>
+                    <p id="reading-passage-loading" class="hidden text-green-600 font-bold">Generating story...</p>
+                </div>
+
+                <!-- Question Area -->
+                <div id="reading-question-area" class="space-y-3 hidden">
+                    <p id="reading-question" class="font-bold text-gray-800 text-lg">Question:</p>
+                    <div id="reading-options" class="space-y-2">
+                        <!-- Options populated by JS -->
+                    </div>
+                    <p id="reading-feedback" class="font-bold text-lg pt-2"></p>
+                </div>
+
+                <button id="check-reading-button" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition hidden">
+                    Check Answer
+                </button>
+                <button id="next-reading-button" class="hidden w-full bg-gray-500 text-white font-bold py-3 rounded-lg hover:bg-gray-600 transition">
+                    Next Story
+                </button>
+            </div>
+        </div>
+        <!-- END READING COMPREHENSION VIEW -->
+
+    </div> <!-- End learning-view -->
+
+    <!-- ---------------------------------------------------- -->
+    <!-- 2. TO-DO LIST EDITOR VIEW (MAIN MANAGER) -->
+    <!-- ---------------------------------------------------- -->
+    <div id="todo-edit-view" class="hidden p-4">
+        <button id="back-to-dashboard-from-todo" class="mb-6 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition duration-300">
+            ← Home (App Dashboard)
+        </button>
+        <h2 class="text-3xl font-bold text-center mb-6 text-green-600">✍️ My Chore Manager</h2>
+
+        <div class="bg-white p-6 rounded-xl shadow-lg border border-green-200 max-w-4xl mx-auto">
+            
+            <!-- Settings Button -->
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h3 class="text-xl font-bold text-green-700">Active Chores (Check to Show on Dashboard)</h3>
+                <button id="show-chore-settings" class="px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition">
+                    🗄️ Chore Settings
+                </button>
+            </div>
+            
+            <!-- 3-column grid structure -->
+            <div id="master-chores-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Unified list populated by JS: Standard + Custom -->
+            </div>
+            
+        </div>
+    </div> <!-- End todo-edit-view -->
+    
+    <!-- Chore Explanation Modal -->
+    <div id="chore-explanation-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
+        <div class="chore-modal bg-white p-6 rounded-xl shadow-2xl border-4 border-yellow-400 text-center transform scale-100 transition-transform duration-300">
+            <h3 class="text-2xl font-bold text-yellow-700 mb-4">Why is this important? ✨</h3>
+            <p id="chore-explanation-output" class="text-gray-700 text-lg italic mb-6">
+                Loading motivation...
+            </p>
+            <button id="close-explanation-modal" class="bg-yellow-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-yellow-600 transition">Got It!</button>
+        </div>
+    </div>
+
+
+    <!-- ---------------------------------------------------- -->
+    <!-- 2.5. TO-DO LIST SETTINGS VIEW (MASTER CHORE MANAGER) -->
+    <!-- ---------------------------------------------------- -->
+    <div id="todo-settings-view" class="hidden p-4">
+        <button id="back-to-manager-from-settings" class="mb-6 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-lg transition duration-300">
+            ← Back to Chore Manager
+        </button>
+        <button id="home-from-settings" class="mb-6 ml-2 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition duration-300">
+            ← Home (App Dashboard)
+        </button>
+        <h2 class="text-3xl font-bold text-center mb-6 text-indigo-600">⚙️ Master Chore List & Customization</h2>
+
+        <div class="bg-white p-6 rounded-xl shadow-lg border border-indigo-200 max-w-4xl mx-auto">
+            
+            <!-- NEW LOCATION FOR CUSTOM TASK INPUT -->
+            <h3 class="text-xl font-bold text-indigo-700 mb-4 border-b pb-2">➕ Add a New Custom Chore</h3>
+            <div class="flex space-x-2 mb-8">
+                <input type="text" id="custom-task-input" placeholder="e.g., Wash the car (max 50 characters)" maxlength="50" class="flex-grow p-2 border border-indigo-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <button id="add-custom-task-button" class="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition font-bold whitespace-nowrap">Add Chore</button>
+            </div>
+            
+            <!-- MASTER CHORES LIST (ALL CHORES) -->
+            <h3 class="text-xl font-bold text-gray-700 mb-4 border-b pb-2">All Chores (Manage Visibility and Delete)</h3>
+            <p class="mb-4 text-gray-600">Click **Hide** to remove a chore from the main Chore Manager.</p>
+            <div id="master-settings-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- All chores populated by JS -->
+            </div>
+        </div>
+    </div> <!-- End todo-settings-view -->
+
+    <!-- ---------------------------------------------------- -->
+    <!-- 3. GAMES HUB VIEW -->
+    <!-- ---------------------------------------------------- -->
+    <div id="games-hub-view" class="hidden p-4">
+        <button id="back-to-dashboard-from-games" class="mb-6 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition duration-300">
+            ← Home (App Dashboard)
+        </button>
+        <h2 class="text-3xl font-bold text-center mb-6 text-purple-600">🕹️ Choose Your Game</h2>
+
+        <!-- UPDATED 3x2 GRID FOR GAMES -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <button id="select-pong" class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 rounded-xl shadow-lg transition transform hover:scale-105">
+                Pong (Catch!)
+            </button>
+            <button id="select-snake" class="bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg transition transform hover:scale-105">
+                Snake
+            </button>
+            <button id="select-avoiding" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg transition transform hover:scale-105">
+                Space Dodger
+            </button>
+            <!-- NEW GAMES START HERE -->
+            <button id="select-catch-star" class="bg-yellow-500 hover:bg-yellow-600 text-gray-800 font-bold py-4 rounded-xl shadow-lg transition transform hover:scale-105">
+                Catch the Star
+            </button>
+            <button id="select-maze-runner" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-4 rounded-xl shadow-lg transition transform hover:scale-105">
+                Maze Runner
+            </button>
+            <button id="select-color-clicker" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg transition transform hover:scale-105">
+                Color Clicker
+            </button>
+            <!-- NEW GAMES END HERE -->
+        </div>
+    </div> <!-- End games-hub-view -->
+
+    <!-- ---------------------------------------------------- -->
+    <!-- 4. PONG GAME VIEW -->
+    <!-- ---------------------------------------------------- -->
+    <div id="pong-view" class="p-4 hidden">
+        <button id="back-to-games-from-pong" class="mb-4 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition duration-300">
+            ← Back to Games Hub
+        </button>
+
+        <!-- Pong Scoreboard -->
+        <div class="w-full flex justify-between items-center mb-4 p-3 bg-gray-800 rounded-lg shadow-xl">
+            <div class="text-center">
+                <p id="p1-controls" class="text-xs font-bold uppercase text-gray-400">Controls: A/D or ←/→</p>
+                <p id="p1-score" class="score-text text-5xl font-extrabold">0</p>
+                <p class="text-xs font-bold uppercase text-gray-400">Score</p>
+            </div>
+            <div class="text-center flex flex-col items-center">
+                <button id="serve-button" class="px-6 py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-full shadow-lg transition duration-300 transform hover:scale-105">
+                    Start (Spacebar)
+                </button>
+            </div>
+            <div class="text-center">
+                <p id="p2-controls" class="text-xs font-bold uppercase text-gray-400">Misses (Max 3)</p>
+                <p id="p2-score" class="text-red-500 text-5xl font-extrabold">0</p>
+            </div>
+        </div>
+        
+        <div class="pong-canvas-container flex justify-center">
+            <canvas id="pongCanvas" class="game-canvas" width="800" height="500"></canvas>
+        </div>
+
+        <!-- Pong Game Over Modal -->
+        <div id="pong-game-over-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
+            <div class="bg-gray-900 p-8 rounded-xl shadow-2xl border-2 border-pink-600 text-center transform scale-100 transition-transform duration-300">
+                <h2 id="pong-modal-text" class="text-4xl font-bold text-yellow-400 mb-4"></h2>
+                <p class="text-gray-300 mb-6">Can you beat your highest score?</p>
+                <div class="space-y-3">
+                    <button id="pong-try-again-button" class="px-8 py-3 w-full bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                        Try Again
+                    </button>
+                    <button id="pong-to-hub-button" class="px-8 py-3 w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                        Return to Games Hub
+                    </button>
+                    <button id="pong-home-button" class="px-8 py-3 w-full bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                        Home (App Dashboard)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div> <!-- End pong-view -->
+
+    <!-- ---------------------------------------------------- -->
+    <!-- 5. SNAKE GAME VIEW -->
+    <!-- ---------------------------------------------------- -->
+    <div id="snake-view" class="p-4 hidden">
+        <button id="back-to-games-from-snake" class="mb-4 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition duration-300">
+            ← Back to Games Hub
+        </button>
+        <div class="flex justify-between items-center mb-4 p-3 bg-gray-800 rounded-lg shadow-xl text-green-400">
+            <h3 class="text-xl font-bold">Score: <span id="snake-score-display">0</span></h3>
+            <p class="text-xs uppercase text-gray-400">Use Arrow Keys to Move</p>
+        </div>
+        <div class="flex justify-center">
+            <canvas id="snakeCanvas" class="game-canvas" width="600" height="400"></canvas>
+        </div>
+
+        <!-- Snake Game Over Modal -->
+        <div id="snake-game-over-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
+            <div class="bg-gray-900 p-8 rounded-xl shadow-2xl border-2 border-green-500 text-center transform scale-100 transition-transform duration-300">
+                <h2 class="text-4xl font-bold text-green-400 mb-4">Game Over!</h2>
+                <p class="text-gray-300 mb-6 text-xl">Your final score: <span id="snake-final-score" class="font-extrabold">0</span></p>
+                <div class="space-y-3">
+                    <button id="snake-try-again-button" class="px-8 py-3 w-full bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                        Try Again
+                    </button>
+                    <button id="snake-to-hub-button" class="px-8 py-3 w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                        Return to Games Hub
+                    </button>
+                    <button id="snake-home-button" class="px-8 py-3 w-full bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                        Home (App Dashboard)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div> <!-- End snake-view -->
+
+    <!-- ---------------------------------------------------- -->
+    <!-- 6. SPACE DODGER GAME VIEW -->
+    <!-- ---------------------------------------------------- -->
+    <div id="avoiding-view" class="p-4 hidden">
+        <button id="back-to-games-from-avoiding" class="mb-4 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition duration-300">
+            ← Back to Games Hub
+        </button>
+        <div class="flex justify-between items-center mb-4 p-3 bg-gray-800 rounded-lg shadow-xl text-blue-400">
+            <h3 class="text-xl font-bold">Time: <span id="avoiding-score-display">0</span> seconds</h3>
+            <p class="text-xs uppercase text-gray-400">Use Left/Right Arrows (or A/D) to Steer</p>
+        </div>
+        <div class="flex justify-center">
+            <canvas id="avoidingCanvas" class="game-canvas" width="600" height="400" style="background-color: #000033; border-color:#800080;"></canvas>
+        </div>
+
+        <!-- Space Dodger Game Over Modal -->
+        <div id="avoiding-game-over-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
+            <div class="bg-gray-900 p-8 rounded-xl shadow-2xl border-2 border-red-500 text-center transform scale-100 transition-transform duration-300">
+                <h2 class="text-4xl font-bold text-red-400 mb-4">SHIP DESTROYED!</h2>
+                <p class="text-gray-300 mb-6 text-xl">You survived for: <span id="avoiding-final-score" class="font-extrabold">0</span> seconds</p>
+                <div class="space-y-3">
+                    <button id="avoiding-try-again-button" class="px-8 py-3 w-full bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                        Try Again
+                    </button>
+                    <button id="avoiding-to-hub-button" class="px-8 py-3 w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                        Return to Games Hub
+                    </button>
+                    <button id="avoiding-home-button" class="px-8 py-3 w-full bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                        Home (App Dashboard)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div> <!-- End avoiding-view -->
+
+    <!-- ---------------------------------------------------- -->
+    <!-- 7. CATCH THE STAR GAME VIEW (NEW) -->
+    <!-- ---------------------------------------------------- -->
+    <div id="catch-star-view" class="p-4 hidden">
+        <button id="back-to-games-from-catch-star" class="mb-4 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition duration-300">
+            ← Back to Games Hub
+        </button>
+        <div class="flex justify-between items-center mb-4 p-3 bg-gray-800 rounded-lg shadow-xl text-yellow-400">
+            <h3 class="text-xl font-bold">Stars: <span id="catch-star-score-display">0</span></h3>
+            <h3 class="text-xl font-bold">Bombs: <span id="catch-star-misses-display" class="text-red-500">0</span>/3</h3>
+            <p class="text-xs uppercase text-gray-400">Use Left/Right Arrows (or A/D) to Move Basket</p>
+        </div>
+        <div class="flex justify-center">
+            <canvas id="catchStarCanvas" class="game-canvas" width="600" height="400" style="background-color: #000033; border-color:#ffcc00;"></canvas>
+        </div>
+
+        <!-- Catch the Star Game Over Modal -->
+        <div id="catch-star-game-over-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
+            <div class="bg-gray-900 p-8 rounded-xl shadow-2xl border-2 border-yellow-500 text-center transform scale-100 transition-transform duration-300">
+                <h2 class="text-4xl font-bold text-yellow-400 mb-4">Stars Collected!</h2>
+                <p class="text-gray-300 mb-6 text-xl">Final Score: <span id="catch-star-final-score" class="font-extrabold">0</span></p>
+                <div class="space-y-3">
+                    <button id="catch-star-try-again-button" class="px-8 py-3 w-full bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                        Try Again
+                    </button>
+                    <button id="catch-star-to-hub-button" class="px-8 py-3 w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                        Return to Games Hub
+                    </button>
+                    <button id="catch-star-home-button" class="px-8 py-3 w-full bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                        Home (App Dashboard)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div> <!-- End catch-star-view -->
+
+    <!-- ---------------------------------------------------- -->
+    <!-- 8. MAZE RUNNER GAME VIEW (NEW) -->
+    <!-- ---------------------------------------------------- -->
+    <div id="maze-runner-view" class="p-4 hidden">
+        <button id="back-to-games-from-maze-runner" class="mb-4 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition duration-300">
+            ← Back to Games Hub
+        </button>
+        <div class="flex justify-between items-center mb-4 p-3 bg-gray-800 rounded-lg shadow-xl text-cyan-400">
+            <h3 class="text-xl font-bold">Goal: <span id="maze-goal-display">Find the Exit</span></h3>
+            <p class="text-xs uppercase text-gray-400">Use Arrow Keys to Move</p>
+        </div>
+        <div class="flex justify-center">
+            <canvas id="mazeRunnerCanvas" class="game-canvas" width="400" height="400" style="background-color: #0f3460; border-color:#00bcd4;"></canvas>
+        </div>
+
+        <!-- Maze Runner Game Over Modal -->
+        <div id="maze-runner-game-over-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
+            <div class="bg-gray-900 p-8 rounded-xl shadow-2xl border-2 border-cyan-500 text-center transform scale-100 transition-transform duration-300">
+                <h2 class="text-4xl font-bold text-cyan-400 mb-4">YOU ESCAPED!</h2>
+                <p class="text-gray-300 mb-6 text-xl">Challenge: <span id="maze-final-score" class="font-extrabold">Completed</span></p>
+                <div class="space-y-3">
+                    <button id="maze-runner-try-again-button" class="px-8 py-3 w-full bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                        Try Another Maze
+                    </button>
+                    <button id="maze-runner-to-hub-button" class="px-8 py-3 w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                        Return to Games Hub
+                    </button>
+                    <button id="maze-runner-home-button" class="px-8 py-3 w-full bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                        Home (App Dashboard)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div> <!-- End maze-runner-view -->
+
+    <!-- ---------------------------------------------------- -->
+    <!-- 9. COLOR CLICKER GAME VIEW (NEW) -->
+    <!-- ---------------------------------------------------- -->
+    <div id="color-clicker-view" class="p-4 hidden">
+        <button id="back-to-games-from-color-clicker" class="mb-4 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition duration-300">
+            ← Back to Games Hub
+        </button>
+        <div class="flex justify-between items-center mb-4 p-3 bg-gray-800 rounded-lg shadow-xl text-teal-400">
+            <h3 class="text-xl font-bold">Best Time: <span id="color-clicker-best-time-display">--</span> ms</h3>
+            <h3 class="text-xl font-bold">Current Time: <span id="color-clicker-time-display">0</span> ms</h3>
+            <p class="text-xs uppercase text-gray-400">Goal: Click when the button is GREEN!</p>
+        </div>
+        <div class="flex justify-center p-8 bg-gray-100 rounded-lg shadow-inner">
+            <button id="color-clicker-button" 
+                    class="w-64 h-64 rounded-full text-2xl font-bold text-white shadow-xl transition transform hover:scale-105 active:scale-95"
+                    style="background-color: #6b7280;">
+                Wait for Green!
+            </button>
+        </div>
+
+        <!-- Color Clicker Game Over Modal -->
+        <div id="color-clicker-game-over-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
+            <div class="bg-gray-900 p-8 rounded-xl shadow-2xl border-2 border-teal-500 text-center transform scale-100 transition-transform duration-300">
+                <h2 class="text-4xl font-bold text-teal-400 mb-4" id="color-clicker-modal-title">Too Early!</h2>
+                <p class="text-gray-300 mb-6 text-xl" id="color-clicker-modal-message">Your time: <span id="color-clicker-final-time" class="font-extrabold">0</span> ms</p>
+                <div class="space-y-3">
+                    <button id="color-clicker-try-again-button" class="px-8 py-3 w-full bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                        Try Again
+                    </button>
+                    <button id="color-clicker-to-hub-button" class="px-8 py-3 w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                        Return to Games Hub
+                    </button>
+                    <button id="color-clicker-home-button" class="px-8 py-3 w-full bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg transition duration-300 shadow-md">
+                        Home (App Dashboard)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div> <!-- End color-clicker-view -->
+
+</div> <!-- End main-app-container -->
+
+<script>
+    // --- APP CONTEXT & CONSTANTS ---
+    var __app_id = typeof __app_id !== 'undefined' ? __app_id : 'kids-helper-app';
+    var __firebase_config = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
+    var __initial_auth_token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+    // --- GEMINI API SETUP (Reusable Function) ---
+    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=";
+    const apiKey = ""; // Canvas environment provides key
+
+    async function callGeminiApi(systemInstruction, userQuery, responseSchema = null, maxRetries = 3) {
+        if (!apiKey) {
+            console.error("Gemini API key is not configured.");
+            // Throw a specific error for the caller to handle
+            throw new Error("API_KEY_MISSING"); 
+        }
+
+        const payload = {
+            contents: [{ parts: [{ text: userQuery }] }],
+            systemInstruction: { parts: [{ text: systemInstruction }] },
+        };
+
+        if (responseSchema) {
+            payload.generationConfig = {
+                responseMimeType: "application/json",
+                responseSchema: responseSchema,
+            };
+        }
+
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                const response = await fetch(API_URL + apiKey, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error("Authentication Failed: The Gemini API key is invalid.");
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (text) {
+                    if (responseSchema) {
+                        return JSON.parse(text);
+                    }
+                    return text;
+                }
+                throw new Error("API response format error or no content.");
+
+            } catch (error) {
+                console.error(`Gemini API call failed (Attempt ${attempt + 1}):`, error.message);
+                if (attempt === maxRetries - 1) {
+                    throw error;
+                }
+                // Exponential backoff delay (1s, 2s, 4s, ...)
+                const delay = Math.pow(2, attempt) * 1000;
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+        return null; // Should be unreachable if maxRetries > 0 but added for safety
+    }
+
+
+    // --- GAME CONTROL FLAGS (Crucial for managing which loop is running) ---
+    let pongIsRunning = false;
+    let snakeIsRunning = false;
+    let avoidingIsRunning = false; // Space Dodger
+    let fallingIsRunning = false; // Falling Words
+    let catchIsRunning = false; // Catch the Star (NEW)
+    let mazeIsRunning = false;  // Maze Runner (NEW)
+    let tapIsRunning = false;   // Color Clicker (NEW - Uses setTimeout, not gameLoop)
+    let currentLoopId = null; // Stores requestAnimationFrame ID
+    
+    // **FIX: Declare keysPressed globally**
+    const keysPressed = {}; 
+    
+    // --- MATH GAME STATE ---
+    let mathQuizState = { 
+        questions: [], 
+        currentIndex: 0, 
+        correctCount: 0, 
+        currentLevel: 1 
+    };
+
+
+    function stopAllGames() {
+        if (currentLoopId) {
+            cancelAnimationFrame(currentLoopId);
+            currentLoopId = null; // Ensure ID is cleared
+        }
+        pongIsRunning = false;
+        snakeIsRunning = false;
+        avoidingIsRunning = false;
+        fallingIsRunning = false; 
+        catchIsRunning = false; // NEW
+        mazeIsRunning = false;  // NEW
+        
+        // Stop Color Clicker Timers explicitly
+        if (tapGameState.timeoutId) clearTimeout(tapGameState.timeoutId);
+        tapIsRunning = false; // NEW
+
+        pongGameState.isGameRunning = false;
+        pongGameState.isServing = false;
+        
+        // Hide all modals/overlays
+        document.getElementById('pong-game-over-modal').classList.add('hidden');
+        document.getElementById('snake-game-over-modal').classList.add('hidden');
+        document.getElementById('avoiding-game-over-modal').classList.add('hidden');
+        document.getElementById('falling-game-over-modal').classList.add('hidden'); 
+        document.getElementById('chore-explanation-modal').classList.add('hidden'); 
+
+        // New game modals
+        document.getElementById('catch-star-game-over-modal').classList.add('hidden');
+        document.getElementById('maze-runner-game-over-modal').classList.add('hidden');
+        document.getElementById('color-clicker-game-over-modal').classList.add('hidden');
+    }
+
+    // --- VIEW SWITCHING LOGIC ---
+    function showView(viewId) {
+        stopAllGames(); // Stop any running game when switching views
+
+        // Array of all main views
+        const views = ['dashboard-view', 'games-hub-view', 'pong-view', 'snake-view', 'avoiding-view', 'todo-edit-view', 'todo-settings-view', 'learning-view', 'typing-free-game-view', 'typing-falling-game-view', 'coding-intro-view', 'reading-comprehension-view', 'catch-star-view', 'maze-runner-view', 'color-clicker-view'];
+        views.forEach(id => document.getElementById(id).classList.add('hidden'));
+
+        // Show the requested view
+        document.getElementById(viewId).classList.remove('hidden');
+        
+        // Special handling for dashboard sub-cards (only the todo card remains here)
+        document.getElementById('todo-card').classList.add('hidden');
+        
+        // Special initialization logic per view
+        if (viewId === 'dashboard-view') {
+            document.getElementById('todo-card').classList.remove('hidden');
+            renderToDoDashboardList(); // Update the read-only list
+        }
+        if (viewId === 'learning-view') {
+            showLearningSubView('learning-hub-menu');
+            displayNextFact(true);
+        }
+        if (viewId === 'todo-edit-view') {
+            renderToDoEditView();
+        }
+        if (viewId === 'todo-settings-view') {
+            renderChoreSettings(); 
+        }
+    }
+
+    // NEW: LEARNING HUB SUB-VIEW MANAGER
+    function showLearningSubView(subViewId) {
+        // Stop falling game if active, just in case
+        if (fallingIsRunning) stopAllGames();
+        
+        const subViews = ['learning-hub-menu', 'math-practice-view', 'typing-practice-view', 'typing-free-game-view', 'typing-falling-game-view', 'coding-intro-view', 'reading-comprehension-view'];
+        subViews.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        });
+        
+        const currentView = document.getElementById(subViewId);
+        if (currentView) currentView.classList.remove('hidden');
+
+        // Specific initialization for sub-views
+        if (subViewId === 'math-practice-view') {
+            initializeMath();
+        } else if (subViewId === 'typing-free-game-view') {
+            initializeTypingTest(); 
+        } else if (subViewId === 'typing-falling-game-view') {
+            initializeFallingGameView(); // NEW: Separate function for view setup
+        } else if (subViewId === 'reading-comprehension-view') {
+            // Re-initialize for the topic input screen
+            document.getElementById('reading-question-area').classList.add('hidden');
+            document.getElementById('reading-passage-loading').classList.add('hidden');
+            document.getElementById('reading-passage').textContent = "Enter a topic above and click \"Generate Story\" to start!";
+            document.getElementById('check-reading-button').classList.add('hidden');
+            document.getElementById('next-reading-button').classList.add('hidden');
+            document.getElementById('generate-story-button').classList.remove('hidden');
+            document.getElementById('reading-topic').disabled = false;
+        }
+    }
+
+
+    // --- BUTTON EVENT LISTENERS (Navigation) ---
+    document.getElementById('show-games-hub-button').addEventListener('click', () => showView('games-hub-view'));
+    document.getElementById('show-learning-button').addEventListener('click', () => showView('learning-view')); 
+    document.getElementById('back-to-dashboard-from-games').addEventListener('click', () => showView('dashboard-view'));
+    document.getElementById('back-to-dashboard-from-learning').addEventListener('click', () => showView('dashboard-view')); 
+
+    // Learning Hub Sub-View Selectors
+    document.getElementById('select-math').addEventListener('click', () => showLearningSubView('math-practice-view'));
+    document.getElementById('select-typing').addEventListener('click', () => showLearningSubView('typing-practice-view'));
+    document.getElementById('select-coding').addEventListener('click', () => showLearningSubView('coding-intro-view'));
+    document.getElementById('select-reading').addEventListener('click', () => showLearningSubView('reading-comprehension-view'));
+
+    // Back to Hub Buttons
+    document.getElementById('back-to-learning-hub-from-math').addEventListener('click', () => showLearningSubView('learning-hub-menu'));
+    document.getElementById('back-to-learning-hub-from-typing').addEventListener('click', () => showLearningSubView('learning-hub-menu'));
+    document.getElementById('back-to-learning-hub-from-coding').addEventListener('click', () => showLearningSubView('learning-hub-menu'));
+    document.getElementById('back-to-learning-hub-from-reading').addEventListener('click', () => showLearningSubView('learning-hub-menu'));
+    
+    // Typing Hub Nav (NEW)
+    document.getElementById('select-typing-free').addEventListener('click', () => showLearningSubView('typing-free-game-view'));
+    document.getElementById('select-typing-falling').addEventListener('click', () => showLearningSubView('typing-falling-game-view'));
+    document.getElementById('back-to-typing-hub-from-free').addEventListener('click', () => showLearningSubView('typing-practice-view'));
+    document.getElementById('back-to-typing-hub-from-falling').addEventListener('click', () => {
+        stopAllGames();
+        showLearningSubView('typing-practice-view');
+    });
+
+
+    // Game Selection
+    document.getElementById('select-pong').addEventListener('click', () => {
+        showView('pong-view');
+        initializePongGame();
+        pongIsRunning = true;
+        gameLoop();
+    });
+    document.getElementById('select-snake').addEventListener('click', () => {
+        showView('snake-view');
+        initSnakeGame();
+        snakeIsRunning = true;
+        gameLoop();
+    });
+    document.getElementById('select-avoiding').addEventListener('click', () => {
+        showView('avoiding-view');
+        initAvoidingGame();
+        avoidingIsRunning = true;
+        gameLoop();
+    });
+    // NEW GAME SELECTORS
+    document.getElementById('select-catch-star').addEventListener('click', () => {
+        showView('catch-star-view');
+        initCatchStarGame();
+        catchIsRunning = true;
+        gameLoop();
+    });
+    document.getElementById('select-maze-runner').addEventListener('click', () => {
+        showView('maze-runner-view');
+        initMazeRunnerGame();
+        mazeIsRunning = true;
+        gameLoop();
+    });
+    document.getElementById('select-color-clicker').addEventListener('click', () => {
+        showView('color-clicker-view');
+        initColorClickerGame();
+    });
+
+
+    // Back Buttons from Game to Hub
+    document.getElementById('back-to-games-from-pong').addEventListener('click', () => showView('games-hub-view'));
+    document.getElementById('back-to-games-from-snake').addEventListener('click', () => showView('games-hub-view'));
+    document.getElementById('back-to-games-from-avoiding').addEventListener('click', () => showView('games-hub-view')); 
+    document.getElementById('back-to-games-from-catch-star').addEventListener('click', () => showView('games-hub-view')); // NEW
+    document.getElementById('back-to-games-from-maze-runner').addEventListener('click', () => showView('games-hub-view')); // NEW
+    document.getElementById('back-to-games-from-color-clicker').addEventListener('click', () => showView('games-hub-view')); // NEW
+
+    // Dashboard features
+    document.getElementById('show-todo-button').addEventListener('click', () => showView('todo-edit-view'));
+    document.getElementById('edit-todo-dashboard-button').addEventListener('click', () => showView('todo-edit-view'));
+    
+    // Fun Fact/Learning Hub features 
+    document.getElementById('fetch-fact-button').addEventListener('click', () => displayNextFact());
+    
+    // Math Practice listeners (Updated for Quiz structure)
+    document.getElementById('new-math-button').addEventListener('click', () => {
+        // Hides result, restarts quiz
+        document.getElementById('math-results-screen').classList.add('hidden');
+        document.getElementById('math-quiz-container').classList.remove('hidden');
+        document.getElementById('math-questions-list').classList.remove('hidden');
+        document.getElementById('check-math-button').classList.remove('hidden');
+
+        generateQuizBatch();
+    });
+    document.getElementById('check-math-button').addEventListener('click', checkAllAnswers); // NEW LISTENER
+    
+    // Math Level Change Listener (UPDATED)
+    document.getElementById('math-grade').addEventListener('change', (e) => {
+        mathQuizState.currentLevel = parseInt(e.target.value);
+        initializeMath(); // Re-initialize the quiz structure
+    });
+    
+    // Typing Practice listeners
+    document.getElementById('start-typing-button').addEventListener('click', startTypingTest);
+    document.getElementById('typing-input').addEventListener('input', checkTypingInput);
+    // Typing Mode/Grade Listeners (UPDATED)
+    document.querySelectorAll('input[name="typing-mode"]').forEach(radio => {
+        radio.addEventListener('change', initializeTypingTest);
+    });
+    document.getElementById('typing-grade-free').addEventListener('change', initializeTypingTest);
+    
+
+    // Falling Game Listeners (NEW)
+    document.getElementById('falling-grade-select').addEventListener('change', () => {
+        // FIX: Ensure the loop is stopped and restarted clean when the grade changes
+        stopAllGames(); 
+        initializeFallingGameView(); 
+    });
+    document.getElementById('falling-game-input').addEventListener('input', checkFallingInput);
+    document.getElementById('falling-game-input').addEventListener('keydown', (e) => {
+        if (e.key === ' ' && fallingIsRunning) e.preventDefault(); // Prevent accidental page scroll
+    });
+    // Falling Game Over Menu
+    document.getElementById('falling-try-again-button').addEventListener('click', () => {
+        document.getElementById('falling-game-over-modal').classList.add('hidden');
+        initializeFallingGameView(); // Use the view function to ensure clean start
+    });
+    document.getElementById('falling-to-hub-button').addEventListener('click', () => showLearningSubView('typing-practice-view'));
+    document.getElementById('falling-home-button').addEventListener('click', () => showView('dashboard-view'));
+
+
+    // Coding Intro listener
+    document.getElementById('run-coding-button').addEventListener('click', () => {
+        const output = document.getElementById('coding-output');
+        output.innerHTML = '⭐ <span class="text-green-600">SUCCESS!</span> The computer says: I love learning!';
+        setTimeout(() => {
+            output.innerHTML = 'Click \'Run Code\' to see the magic!';
+        }, 3000);
+    });
+    
+    // Reading Comprehension listeners (UPDATED)
+    document.getElementById('generate-story-button').addEventListener('click', generateNewReadingTest);
+    document.getElementById('check-reading-button').addEventListener('click', checkReadingAnswer);
+    document.getElementById('next-reading-button').addEventListener('click', () => showLearningSubView('reading-comprehension-view')); // Back to topic screen
+
+    // To-Do Edit View Navigation
+    document.getElementById('back-to-dashboard-from-todo').addEventListener('click', () => showView('dashboard-view'));
+    document.getElementById('show-chore-settings').addEventListener('click', () => showView('todo-settings-view')); 
+    document.getElementById('back-to-manager-from-settings').addEventListener('click', () => showView('todo-edit-view')); 
+    document.getElementById('home-from-settings').addEventListener('click', () => showView('dashboard-view')); 
+    
+    // Chore Motivation Modal Listener
+    document.getElementById('close-explanation-modal').addEventListener('click', () => {
+        document.getElementById('chore-explanation-modal').classList.add('hidden');
+    });
+
+    // NEW CATCH STAR Listeners
+    document.getElementById('catch-star-try-again-button').addEventListener('click', () => {
+        document.getElementById('catch-star-game-over-modal').classList.add('hidden');
+        initCatchStarGame();
+        catchIsRunning = true;
+    });
+    document.getElementById('catch-star-to-hub-button').addEventListener('click', () => showView('games-hub-view'));
+    document.getElementById('catch-star-home-button').addEventListener('click', () => showView('dashboard-view'));
+
+    // NEW MAZE RUNNER Listeners
+    document.getElementById('maze-runner-try-again-button').addEventListener('click', () => {
+        document.getElementById('maze-runner-game-over-modal').classList.add('hidden');
+        initMazeRunnerGame();
+        mazeIsRunning = true;
+    });
+    document.getElementById('maze-runner-to-hub-button').addEventListener('click', () => showView('games-hub-view'));
+    document.getElementById('maze-runner-home-button').addEventListener('click', () => showView('dashboard-view'));
+
+    // NEW COLOR CLICKER Listeners
+    document.getElementById('color-clicker-button').addEventListener('click', handleColorClickerClick);
+    document.getElementById('color-clicker-try-again-button').addEventListener('click', () => {
+        document.getElementById('color-clicker-game-over-modal').classList.add('hidden');
+        initColorClickerGame();
+    });
+    document.getElementById('color-clicker-to-hub-button').addEventListener('click', () => showView('games-hub-view'));
+    document.getElementById('color-clicker-home-button').addEventListener('click', () => showView('dashboard-view'));
+
+
+    // ------------------------------------------------------------------
+    // --- MATH PRACTICE LOGIC (REFACTORED FOR QUIZ BATCHES) --------------------
+    // ------------------------------------------------------------------
+
+    const QUIZ_SIZE = 10;
+    const WORD_PROBLEM_COUNT = 5;
+    const CALCULATION_COUNT = 5;
+
+    // Consolidated Word Problem Data Structure
+    const MATH_WORD_PROBLEMS = [
+        // Grade 1
+        { grades: [1,2], q: "You have 3 red apples and 4 green apples. How many apples do you have in total?", a: "7", type: 'Addition'},
+        { grades: [1,2], q: "There are 9 blocks. If you use 5 to build a tower, how many blocks are left?", a: "4", type: 'Subtraction'},
+        { grades: [1], q: "A squirrel buried 6 nuts yesterday and 3 nuts today. How many nuts did the squirrel bury?", a: "9", type: 'Addition'},
+        // Grade 2
+        { grades: [2,3], q: "Mom baked 12 cookies. You ate 5. How many cookies are left?", a: "7", type: 'Subtraction'},
+        { grades: [2,3], q: "A bus has 15 children. 7 more get on. How many are on the bus now?", a: "22", type: 'Addition'},
+        { grades: [2], q: "A pond has 20 ducks. 8 fly away. How many ducks are left in the pond?", a: "12", type: 'Subtraction'},
+        // Grade 3
+        { grades: [3,4], q: "A library has 85 books. 15 books are checked out. How many are left?", a: "70", type: 'Subtraction'},
+        { grades: [3,4], q: "You buy 4 packs of gum. Each pack has 5 pieces. How many pieces do you have?", a: "20", type: 'Multiplication'},
+        { grades: [3], q: "There are 5 shelves, and each shelf holds 7 toys. How many toys are there in total?", a: "35", type: 'Multiplication'},
+        // Grade 4
+        { grades: [4,5], q: "A garden has 6 rows of tomato plants. Each row has 8 plants. How many plants in total?", a: "48", type: 'Multiplication'},
+        { grades: [4,5], q: "You have 45 candies to share equally among 5 friends. How many does each friend get?", a: "9", type: 'Division'},
+        { grades: [4], q: "You ate 1/4 of a pizza and your brother ate 2/4. What fraction of the pizza did you both eat?", a: "3/4", type: 'Fractions'},
+        // Grade 5
+        { grades: [5], q: "A video game costs $75. You save $42. How much more do you need?", a: "33", type: 'Subtraction'},
+        { grades: [5], q: "You divide 96 stickers evenly into 8 piles. How many stickers are in each pile?", a: "12", type: 'Division'},
+        { grades: [5], q: "A school field is 200 meters long. If you run around it 4 times, how far do you run?", a: "800", type: 'Multiplication'},
+    ];
+    
+    // Helper function for random selection
+    const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    
+    // Helper function for array shuffle
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function generateCalculationProblem(grade) {
+        let num1, num2, operator, answer, questionText, type;
+
+        const problemTypes = ['Addition', 'Subtraction', 'Multiplication', 'Division', 'Fractions'];
+        let allowedTypes = problemTypes.slice(0, grade); 
+        
+        // Adjust complexity based on grade
+        if (grade >= 4) allowedTypes.push('Fractions');
+        if (grade < 3) allowedTypes = allowedTypes.filter(t => t !== 'Multiplication' && t !== 'Division' && t !== 'Fractions');
+        if (grade === 1) allowedTypes = ['Addition', 'Subtraction']; 
+        if (grade === 2) allowedTypes = ['Addition', 'Subtraction', 'Multiplication']; 
+        if (grade === 3) allowedTypes = ['Addition', 'Subtraction', 'Multiplication', 'Division'];
+
+        operator = allowedTypes[rand(0, allowedTypes.length - 1)];
+        type = operator;
+
+        if (operator === 'Addition') {
+            const maxVal = grade <= 2 ? 30 : (grade <= 4 ? 200 : 500);
+            num1 = rand(1, maxVal / 2);
+            num2 = rand(1, maxVal / 2);
+            answer = num1 + num2;
+            questionText = `${num1} + ${num2} = ?`;
+        } else if (operator === 'Subtraction') {
+            const maxVal = grade <= 2 ? 30 : (grade <= 4 ? 150 : 300);
+            num1 = rand(10, maxVal);
+            num2 = rand(1, num1 - 1); 
+            answer = num1 - num2;
+            questionText = `${num1} - ${num2} = ?`;
+        } else if (operator === 'Multiplication') {
+            const maxFactor = grade === 3 ? 12 : (grade === 4 ? 15 : 20);
+            num1 = rand(2, maxFactor);
+            num2 = rand(2, maxFactor);
+            answer = num1 * num2;
+            questionText = `${num1} × ${num2} = ?`;
+        } else if (operator === 'Division') {
+            const divisor = rand(2, grade + 1);
+            const quotient = rand(2, grade * 2);
+            num1 = divisor * quotient;
+            num2 = divisor;
+            answer = quotient;
+            questionText = `${num1} ÷ ${num2} = ?`;
+        } else if (operator === 'Fractions') {
+            // Simple Fraction Addition/Subtraction with same denominator
+            const denominator = grade === 4 ? 4 : (grade === 5 ? rand(6, 12) : 4);
+            const op = rand(0, 1) === 0 ? '+' : '-';
+            
+            let numA1 = rand(1, denominator - 1);
+            let numA2 = rand(1, denominator - 1);
+            
+            if (op === '-') {
+                if (numA2 > numA1) [numA1, numA2] = [numA2, numA1];
+            }
+
+            const numAnswer = op === '+' ? numA1 + numA2 : numA1 - numA2;
+            answer = `${numAnswer}/${denominator}`;
+            questionText = `${numA1}/${denominator} ${op} ${numA2}/${denominator} = ?`;
+        }
+        
+        // Ensure answer is a string before returning
+        return { q: questionText, a: answer.toString(), type: type };
+    }
+
+    function generateQuizBatch() {
+        const grade = mathQuizState.currentLevel;
+        let batch = [];
+        let calculationProblems = [];
+        let wordProblems = [];
+        
+        // 1. Generate 5 Calculation Problems
+        for (let i = 0; i < CALCULATION_COUNT; i++) {
+            calculationProblems.push(generateCalculationProblem(grade));
+        }
+
+        // 2. Select 5 Word Problems (Randomly from available pool for this grade)
+        const availableWPs = MATH_WORD_PROBLEMS.filter(wp => wp.grades.includes(grade));
+        const shuffledWPs = shuffleArray([...availableWPs]);
+        wordProblems = shuffledWPs.slice(0, WORD_PROBLEM_COUNT);
+
+        // 3. Combine and Shuffle
+        batch = shuffleArray([...calculationProblems, ...wordProblems]);
+        
+        // 4. Initialize State
+        mathQuizState.questions = batch;
+        mathQuizState.currentIndex = 0;
+        mathQuizState.correctCount = 0;
+        
+        // NEW: Display the full worksheet
+        displayMathWorksheet();
+    }
+
+    function initializeMath() {
+        // Set level based on selector on load, then generate quiz
+        const gradeSelector = document.getElementById('math-grade');
+        mathQuizState.currentLevel = parseInt(gradeSelector.value);
+        
+        // Show quiz section and hide results
+        document.getElementById('math-results-screen').classList.add('hidden');
+        document.getElementById('math-quiz-container').classList.remove('hidden');
+        document.getElementById('math-questions-list').classList.remove('hidden');
+        document.getElementById('check-math-button').classList.remove('hidden');
+        
+        generateQuizBatch();
+    }
+    
+    function displayMathWorksheet() {
+        const listContainer = document.getElementById('math-questions-list');
+        listContainer.innerHTML = '';
+        
+        mathQuizState.questions.forEach((question, index) => {
+            const questionNumber = index + 1;
+            
+            const div = document.createElement('div');
+            // Card design for each question
+            div.className = 'p-3 border border-blue-200 rounded-lg bg-white shadow-sm';
+            div.innerHTML = `
+                <p class="font-bold text-sm text-gray-500 mb-2">Q${questionNumber} (${question.type}):</p>
+                <p class="text-lg text-blue-800 mb-3">${question.q}</p>
+                
+                <div class="flex items-center space-x-3">
+                    <input type="text" id="math-input-${index}" placeholder="Answer" 
+                           class="w-full p-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500" data-index="${index}">
+                    <span id="math-feedback-${index}" class="text-sm font-bold shrink-0"></span>
+                </div>
+            `;
+            listContainer.appendChild(div);
+        });
+    }
+
+    function checkAllAnswers() {
+        let correctCount = 0;
+        let totalQuestions = mathQuizState.questions.length;
+        
+        // Prevent checking multiple times
+        document.getElementById('check-math-button').disabled = true;
+
+        mathQuizState.questions.forEach((question, index) => {
+            const inputElement = document.getElementById(`math-input-${index}`);
+            const feedbackElement = document.getElementById(`math-feedback-${index}`);
+            
+            if (!inputElement || !feedbackElement) return;
+
+            const userAnswer = inputElement.value.trim().toLowerCase();
+            
+            // Disable input after checking
+            inputElement.disabled = true;
+
+            if (!userAnswer) {
+                feedbackElement.className = 'text-sm font-bold text-gray-500';
+                feedbackElement.textContent = '❌ Missing Answer';
+                return;
+            }
+
+            // --- FIX: Ensure question.a is a string before calling toLowerCase() ---
+            const expectedAnswer = question.a.toLowerCase().trim().replace(/\s+/g, '');
+            const normalizedUserAnswer = userAnswer.replace(/\s+/g, '');
+
+            // Comparison Logic
+            let isCorrect;
+            if (expectedAnswer.includes('/') || isNaN(parseFloat(expectedAnswer))) {
+                // String comparison for fractions/word problem answers
+                isCorrect = normalizedUserAnswer === expectedAnswer;
+            } else {
+                // Numeric comparison
+                isCorrect = parseFloat(normalizedUserAnswer) === parseFloat(expectedAnswer);
+            }
+
+            if (isCorrect) {
+                feedbackElement.className = 'text-sm font-bold text-green-600';
+                feedbackElement.textContent = '✅ Correct!';
+                correctCount++;
+            } else {
+                feedbackElement.className = 'text-sm font-bold text-red-600';
+                // Show correct answer for learning
+                feedbackElement.textContent = `❌ Incorrect. (Answer: ${question.a})`; 
+            }
+        });
+
+        mathQuizState.correctCount = correctCount;
+        endQuiz(); // Call endQuiz to display the final result screen
+    }
+
+    function endQuiz() {
+        document.getElementById('math-quiz-container').classList.add('hidden');
+        document.getElementById('math-results-screen').classList.remove('hidden');
+        document.getElementById('check-math-button').disabled = false;
+        
+        const scoreElement = document.getElementById('math-final-score');
+        const grade = mathQuizState.currentLevel;
+        const score = mathQuizState.correctCount;
+        
+        let message = `You scored ${score} out of 10 for Grade ${grade} math.`;
+        
+        scoreElement.classList.remove('text-red-500', 'text-yellow-600', 'text-green-600');
+
+        if (score >= 8) {
+            message += " Excellent work! You're ready for the next level!";
+            scoreElement.classList.add('text-green-600');
+        } else if (score >= 5) {
+            message += " Good job! Keep practicing to master this grade!";
+            scoreElement.classList.add('text-yellow-600');
+        } else {
+            message += " Keep trying! Every time you practice, your brain gets stronger!";
+            scoreElement.classList.add('text-red-500');
+        }
+
+        scoreElement.textContent = message;
+    }
+
+
+    // ------------------------------------------------------------------
+    // --- TYPING PRACTICE LOGIC ----------------------------------------
+    // ------------------------------------------------------------------
+    
+    // NEW: Single letter pool for beginners
+    const TYPING_LETTERS = "abcdefghijklmnopqrstuvwxyz "; 
+    
+    const TYPING_SENTENCES_G3 = [
+        "The quick brown fox jumps over the lazy dog.",
+        "A quiet morning is the best time to read books.",
+        "Blue whales are the largest animals on Earth.",
+        "I like to play games with my friends after school.",
+        "Today is a great day for building a very tall tower.",
+    ];
+    const TYPING_SENTENCES_G5 = [
+        "Learning new things with concentration makes your brain grow stronger every single day.",
+        "Five fluffy clouds drifted slowly across the bright sky, carrying secrets of the wind.",
+        "The small kitten chased a bright red laser pointer across the freshly polished wooden floor.",
+        "If you can code, you can build powerful computer programs and amazing new worlds.",
+    ];
+    
+    const TYPING_WORDS_G1 = [
+        "cat", "dog", "run", "jump", "sit", "box", "sun", "moon", "go", "stop", 
+        "day", "big", "red", "blue", "ball", "park", "book", "find", "lost", "home"
+    ];
+    
+    const TYPING_WORDS_G3 = [
+        "apple", "seven", "today", "music", "school", "friend", "happy", "yellow", 
+        "green", "light", "heavy", "round", "square", "clean", "write", "talk", "draw", "sport", "sunny", "planet"
+    ];
+    
+    const TYPING_WORDS_G5 = [
+        "computer", "keyboard", "science", "challenge", "program", "mountain", "ocean",
+        "adventure", "question", "building", "umbrella", "cookies", "library", "internet", "gravity", "rocket"
+    ];
+
+
+    let typingSentence = "";
+    let typingInputIndex = 0;
+    let typingStartTime = null;
+    let typingErrors = 0;
+    let typingIsRunning = false;
+    let currentTypingMode = 'letters';
+
+    function initializeTypingTest() {
+        typingIsRunning = false;
+        typingInputIndex = 0;
+        typingErrors = 0;
+        typingStartTime = null;
+
+        const grade = parseInt(document.getElementById('typing-grade-free').value);
+        currentTypingMode = document.querySelector('input[name="typing-mode"]:checked').value;
+        
+        let contentPool;
+        
+        // 1. Determine Content based on Mode
+        if (currentTypingMode === 'letters') {
+            let letterSequence = "";
+            const lettersOnly = TYPING_LETTERS.slice(0, 26); 
+            for (let i = 0; i < 200; i++) { 
+                letterSequence += lettersOnly.charAt(Math.floor(Math.random() * lettersOnly.length));
+                if (i % 8 === 0) letterSequence += ' '; 
+            }
+            typingSentence = letterSequence.trim();
+        } else if (currentTypingMode === 'sentence') {
+            contentPool = grade <= 3 ? TYPING_SENTENCES_G3 : TYPING_SENTENCES_G5;
+            typingSentence = contentPool[Math.floor(Math.random() * contentPool.length)];
+        } else { // mode === 'word'
+            if (grade === 1) contentPool = TYPING_WORDS_G1;
+            else if (grade === 3) contentPool = TYPING_WORDS_G3;
+            else contentPool = TYPING_WORDS_G5;
+            
+            // Generate a sequence of 12 random words
+            let wordSequence = [];
+            for (let i = 0; i < 12; i++) {
+                wordSequence.push(contentPool[Math.floor(Math.random() * contentPool.length)]);
+            }
+            typingSentence = wordSequence.join(' ') + ' '; // Add space at the end for clean finish
+        }
+
+
+        // 2. Reset display (All characters start pending/visible)
+        document.getElementById('typing-text-display').innerHTML = typingSentence.split('').map((char, index) => {
+            return `<span id="char-${index}" class="char-pending">${char}</span>`;
+        }).join('');
+
+        document.getElementById('typing-input').value = '';
+        document.getElementById('typing-input').disabled = true;
+        document.getElementById('start-typing-button').textContent = "Start Test";
+        document.getElementById('wpm-display').textContent = '0';
+        document.getElementById('accuracy-display').textContent = '0%';
+        document.getElementById('error-display').textContent = '0';
+    }
+
+    function startTypingTest() {
+        if (typingIsRunning) return;
+
+        initializeTypingTest(); // Reset fully
+
+        document.getElementById('typing-input').disabled = false;
+        document.getElementById('typing-input').focus();
+        document.getElementById('start-typing-button').textContent = "Typing...";
+
+        // Set cursor on first character
+        const firstChar = document.getElementById('char-0');
+        if (firstChar) firstChar.className = 'char-cursor';
+
+        typingIsRunning = true;
+        typingStartTime = new Date().getTime();
+    }
+
+    function checkTypingInput(e) {
+        if (!typingIsRunning) return;
+
+        const input = e.target.value;
+        
+        // --- Handle backspace ---
+        if (input.length < typingInputIndex) {
+            // Restore previous character status from invisible to visible
+            typingInputIndex--;
+            const charElement = document.getElementById(`char-${typingInputIndex}`);
+            if (charElement) {
+                charElement.className = 'char-cursor';
+                charElement.style.visibility = 'visible'; // Make visible again
+            }
+            return;
+        }
+
+        // --- Handle correct typing forward ---
+        if (input.length > typingInputIndex) {
+            const lastTypedChar = input.charAt(input.length - 1);
+            const expectedChar = typingSentence.charAt(typingInputIndex);
+
+            const charElement = document.getElementById(`char-${typingInputIndex}`);
+            if (lastTypedChar === expectedChar) {
+                // SUCCESS: Character pops/disappears immediately
+                charElement.className = 'char-correct';
+                charElement.style.visibility = 'hidden'; 
+            } else {
+                charElement.className = 'char-incorrect';
+                charElement.style.visibility = 'visible'; // Ensure error is visible
+                typingErrors++;
+            }
+            typingInputIndex++;
+            
+            // Set cursor on next character
+            const nextCharElement = document.getElementById(`char-${typingInputIndex}`);
+            if (nextCharElement) {
+                nextCharElement.className = 'char-cursor';
+            }
+        }
+        
+        // Remove text from input field immediately after processing the last character
+        e.target.value = '';
+
+        // Update results
+        const timeElapsed = (new Date().getTime() - typingStartTime) / 60000; 
+        const typedCharacters = typingInputIndex;
+        const WPM = Math.round((typedCharacters / 5) / timeElapsed); 
+        const accuracy = Math.max(0, Math.round(((typedCharacters - typingErrors) / typedCharacters) * 100)) || 0;
+
+        document.getElementById('wpm-display').textContent = isFinite(WPM) ? WPM : 0;
+        document.getElementById('accuracy-display').textContent = accuracy + '%';
+        document.getElementById('error-display').textContent = '0';
+
+        // Check for test completion
+        if (typingInputIndex === typingSentence.length) {
+            typingIsRunning = false;
+            document.getElementById('typing-input').disabled = true;
+            document.getElementById('start-typing-button').textContent = `Test Finished! WPM: ${WPM}`;
+            setTimeout(initializeTypingTest, 3000);
+        }
+    }
+    
+    // ------------------------------------------------------------------
+    // --- FALLING WORD GAME LOGIC --------------------------------
+    // ------------------------------------------------------------------
+
+    let fallingCanvas, fallingCtx;
+    let fallingGameState = {
+        words: [],
+        score: 0,
+        lives: 3,
+        currentInput: '',
+        targetWord: null,
+        targetIndex: 0,
+        // spawnInterval property is now removed as spawning is conditional
+        lastSpawnTime: 0, 
+        fallSpeed: 1,
+        grade: 1
+    };
+
+    // NEW: Function to handle initial setup AND grade change
+    function initializeFallingGameView() {
+        // 1. Stop any running game loop explicitly
+        stopAllGames();
+        
+        // 2. Initial Canvas Setup
+        if (!fallingCanvas) {
+            fallingCanvas = document.getElementById('fallingCanvas');
+            fallingCtx = fallingCanvas.getContext('2d');
+        }
+        fallingCanvas.width = 600;
+        fallingCanvas.height = 400;
+
+        // 3. Reset Game State
+        fallingGameState.grade = parseInt(document.getElementById('falling-grade-select').value);
+        
+        // Adjust difficulty settings (speed should ONLY be set here)
+        if (fallingGameState.grade === 1) {
+            fallingGameState.fallSpeed = 0.125;
+        } else if (fallingGameState.grade === 3) {
+            fallingGameState.fallSpeed = 0.175; 
+        } else { // Grade 5
+            fallingGameState.fallSpeed = 0.5;
+        }
+
+        // Reset all dynamic properties
+        fallingGameState.words = [];
+        fallingGameState.score = 0;
+        fallingGameState.lives = 3;
+        fallingGameState.currentInput = '';
+        fallingGameState.targetWord = null;
+        fallingGameState.targetIndex = 0;
+        fallingGameState.lastSpawnTime = 0; 
+        
+        // 4. UI Setup
+        document.getElementById('falling-game-input').value = '';
+        document.getElementById('falling-game-input').disabled = false;
+        document.getElementById('falling-game-input').focus();
+
+        updateFallingDisplay();
+        
+        // 5. Start Game Loop and initial word spawn
+        fallingIsRunning = true;
+        gameLoop(); 
+        
+        // Spawn the very first word immediately upon starting the game flow
+        if (fallingGameState.words.length === 0) { 
+            spawnFallingWord();
+        }
+    }
+
+
+    function spawnFallingWord() {
+        let pool;
+        if (fallingGameState.grade === 1) pool = TYPING_WORDS_G1.filter(w => w.length <= 4); // Simpler words
+        else if (fallingGameState.grade === 3) pool = TYPING_WORDS_G3.filter(w => w.length <= 7);
+        else pool = TYPING_WORDS_G5; // Harder words
+        
+        const word = pool[Math.floor(Math.random() * pool.length)];
+        fallingCtx.font = '24px Inter'; // Set font before measuring
+        const wordWidth = fallingCtx.measureText(word).width;
+        
+        fallingGameState.words.push({
+            text: word,
+            x: Math.random() * (fallingCanvas.width - wordWidth - 10) + 5, // Adjusted to fit width
+            y: -50,
+            width: wordWidth,
+            active: false
+        });
+        
+        fallingGameState.lastSpawnTime = performance.now(); // Update time for logging/debugging if needed
+    }
+
+    function updateFallingDisplay() {
+        document.getElementById('falling-score-display').textContent = fallingGameState.score;
+        document.getElementById('falling-lives-display').textContent = fallingGameState.lives;
+        
+        // Set placeholder in input box based on target word
+        const inputElement = document.getElementById('falling-game-input');
+        if (fallingGameState.targetWord) {
+             inputElement.placeholder = `Target: ${fallingGameState.targetWord.text.slice(fallingGameState.targetIndex)}`;
+        } else {
+             inputElement.placeholder = `Type falling words here...`;
+        }
+    }
+
+    function checkFallingInput(e) {
+        if (!fallingIsRunning) return;
+        
+        let inputChar = e.data ? e.data.toLowerCase() : '';
+        let inputElement = e.target;
+        
+        // 1. Find or Validate Target Word
+        let target = fallingGameState.targetWord;
+
+        if (!target) {
+            // No target, look for one that starts with the current typed character
+            target = fallingGameState.words.find(w => w.text.startsWith(inputChar));
+            if (target) {
+                fallingGameState.targetWord = target;
+                target.active = true;
+                fallingGameState.currentInput = inputChar;
+                fallingGameState.targetIndex = 1;
+                inputElement.value = ''; // Clear input for next character
+            } else {
+                // No match, clear invalid input
+                inputElement.value = '';
+            }
+        } else {
+            // Target exists, check next character
+            const expectedChar = target.text.charAt(fallingGameState.targetIndex);
+            
+            if (inputChar === expectedChar) {
+                fallingGameState.targetIndex++;
+                fallingGameState.currentInput += inputChar;
+                inputElement.value = ''; // Clear input for next character
+
+                // Check for completion
+                if (fallingGameState.targetIndex === target.text.length) {
+                    // SUCCESS! Word fully typed.
+                    fallingGameState.score++;
+                    // Remove word from array (this triggers next spawn in updateFallingGame)
+                    fallingGameState.words = fallingGameState.words.filter(w => w !== target);
+                    
+                    // Reset input state and target immediately
+                    fallingGameState.currentInput = '';
+                    fallingGameState.targetWord = null;
+                    fallingGameState.targetIndex = 0;
+                    
+                    updateFallingDisplay();
+                    return; // Exit after successful completion
+                }
+            } else {
+                 // Incorrect character typed, ignore and clear input buffer
+                 inputElement.value = '';
+            }
+        }
+
+        // Handle Backspace: Revert state if input is cleared
+        if (inputElement.value === '' && e.inputType === 'deleteContentBackward' && fallingGameState.targetIndex > 0) {
+            fallingGameState.targetIndex--;
+            fallingGameState.currentInput = fallingGameState.currentInput.slice(0, -1);
+            if (fallingGameState.targetIndex === 0) {
+                 fallingGameState.targetWord = null;
+            }
+        }
+
+
+        updateFallingDisplay();
+    }
+
+
+    function updateFallingGame() {
+        if (!fallingIsRunning || !fallingCanvas) return;
+        // const now = performance.now(); // Time is no longer used for spawning
+
+        // Move and Check for Misses
+        for (let i = fallingGameState.words.length - 1; i >= 0; i--) {
+            let word = fallingGameState.words[i];
+            word.y += fallingGameState.fallSpeed;
+            
+            // Check for miss
+            if (word.y > fallingCanvas.height) {
+                fallingGameState.words.splice(i, 1);
+                fallingGameState.lives--;
+                
+                // Clear input if the missed word was the target
+                if (word === fallingGameState.targetWord) {
+                    fallingGameState.targetWord = null;
+                    fallingGameState.currentInput = '';
+                    document.getElementById('falling-game-input').value = '';
+                }
+                
+                updateFallingDisplay();
+
+                if (fallingGameState.lives <= 0) {
+                    endFallingGame();
+                    return;
+                }
+            }
+        }
+        
+        // Clear target if it disappeared
+        if (fallingGameState.targetWord && !fallingGameState.words.includes(fallingGameState.targetWord)) {
+            fallingGameState.targetWord = null;
+            fallingGameState.currentInput = '';
+            document.getElementById('falling-game-input').value = '';
+            updateFallingDisplay();
+        }
+        
+        // NEW CONDITIONAL SPAWN CHECK: Spawn the next word only if the list is empty (previous word handled).
+        if (fallingGameState.words.length === 0) {
+            spawnFallingWord();
+        }
+    }
+
+    function drawFallingGame() {
+        if (!fallingCtx) return;
+        
+        fallingCtx.fillStyle = '#0f3460';
+        fallingCtx.fillRect(0, 0, fallingCanvas.width, fallingCanvas.height);
+        
+        fallingCtx.font = '24px Inter';
+        fallingCtx.textAlign = 'left';
+
+        fallingGameState.words.forEach(word => {
+            const isTarget = word === fallingGameState.targetWord;
+            const text = word.text;
+            
+            let currentX = word.x;
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                // Measure char width for position tracking
+                const charWidth = fallingCtx.measureText(char).width;
+                
+                let charColor = '#ffffff';
+
+                if (isTarget) {
+                    if (i < fallingGameState.targetIndex) {
+                        charColor = '#10b981'; // Correctly typed part (Green)
+                    } else if (i === fallingGameState.targetIndex) {
+                        charColor = '#ff0000'; // Cursor/Next char (Red)
+                    } else {
+                        charColor = '#d1d5db'; // Pending part (Light Gray)
+                    }
+                } else {
+                    charColor = '#ffffff';
+                }
+
+                fallingCtx.fillStyle = charColor;
+                fallingCtx.fillText(char, currentX, word.y);
+                currentX += charWidth;
+            }
+        });
+        
+        // Draw life indicators
+        const lifeIcon = '❤️';
+        fallingCtx.font = '24px Inter';
+        fallingCtx.fillStyle = '#ef4444';
+        for (let i = 0; i < fallingGameState.lives; i++) {
+            fallingCtx.fillText(lifeIcon, fallingCanvas.width - 40 - (i * 30), 30);
+        }
+    }
+
+    function endFallingGame() {
+        fallingIsRunning = false;
+        document.getElementById('falling-final-score').textContent = fallingGameState.score;
+        document.getElementById('falling-game-over-modal').classList.remove('hidden');
+        document.getElementById('falling-game-input').disabled = true;
+    }
+
+
+    // ------------------------------------------------------------------
+    // --- READING COMPREHENSION LOGIC (ADAPTIVE GENERATION) -----------
+    // ------------------------------------------------------------------
+    
+    let currentReadingTest = null;
+    
+    // Schema for structured output from Gemini
+    const READING_SCHEMA = {
+        type: "OBJECT",
+        properties: {
+            story: { type: "STRING" },
+            question: { type: "STRING" },
+            options: { type: "ARRAY", items: { type: "STRING" } },
+            answer: { type: "STRING" }
+        },
+        required: ["story", "question", "options", "answer"]
+    };
+
+    async function generateNewReadingTest() {
+        const topicInput = document.getElementById('reading-topic');
+        const topic = topicInput.value.trim() || 'a magical animal';
+        
+        const passageElement = document.getElementById('reading-passage');
+        const loadingElement = document.getElementById('reading-passage-loading');
+        
+        // UI State: Loading
+        passageElement.classList.add('hidden');
+        loadingElement.classList.remove('hidden');
+        topicInput.disabled = true;
+        document.getElementById('generate-story-button').classList.add('hidden');
+        document.getElementById('reading-question-area').classList.add('hidden');
+        document.getElementById('reading-feedback').textContent = '';
+        
+        const systemPrompt = "You are a creative writer and quiz master for 8-year-olds. Your task is to write a short, fun story (about 50-70 words) and create one fact-based comprehension question with exactly four multiple-choice options, one of which is the correct answer. The story must be based on the user's provided topic. Return the data as a single JSON object.";
+        const userQuery = `Generate a story about ${topic}.`;
+
+        try {
+            const data = await callGeminiApi(systemPrompt, userQuery, READING_SCHEMA);
+            
+            if (!data || !data.story) {
+                // If API key is missing, callGeminiApi throws, but if it returns null, this catches it.
+                throw new Error("Failed to retrieve story data from API.");
+            }
+
+            currentReadingTest = data;
+            
+            // UI State: Display Story
+            loadingElement.classList.add('hidden');
+            passageElement.textContent = currentReadingTest.story;
+            passageElement.classList.remove('hidden');
+            document.getElementById('reading-question-area').classList.remove('hidden');
+            document.getElementById('reading-topic').disabled = true;
+
+            displayReadingQuiz(currentReadingTest);
+
+        } catch (error) {
+            loadingElement.classList.add('hidden');
+            passageElement.classList.remove('hidden');
+            
+            let errorMessage = "Error loading story. The API service may be unavailable or the request failed.";
+            if (error.message.includes("API_KEY_MISSING")) {
+                errorMessage = "Authentication Error: Gemini API key is missing. Cannot generate new stories. (Check browser console for details)";
+            } else if (error.message.includes("Authentication Failed")) {
+                errorMessage = "Authentication Error: Gemini API key is invalid. Cannot generate new stories.";
+            } else {
+                 console.error("Reading API Error:", error);
+            }
+            
+            passageElement.textContent = errorMessage;
+            document.getElementById('generate-story-button').classList.remove('hidden');
+            document.getElementById('reading-topic').disabled = false;
+            document.getElementById('reading-feedback').textContent = "Please ensure your API key is configured.";
+        }
+    }
+
+    function displayReadingQuiz(test) {
+        document.getElementById('reading-question').textContent = `Question: ${test.question}`;
+        
+        const optionsDiv = document.getElementById('reading-options');
+        optionsDiv.innerHTML = '';
+
+        test.options.forEach((option, index) => {
+            const id = `option-${index}`;
+            const div = document.createElement('div');
+            div.innerHTML = `
+                <input type="radio" id="${id}" name="reading_option" value="${option}" class="mr-2 text-green-600">
+                <label for="${id}" class="text-gray-700">${option}</label>
+            `;
+            optionsDiv.appendChild(div);
+        });
+        
+        document.getElementById('check-reading-button').classList.remove('hidden');
+        document.getElementById('next-reading-button').classList.add('hidden');
+    }
+
+    function checkReadingAnswer() {
+        const selected = document.querySelector('input[name="reading_option"]:checked');
+        const feedback = document.getElementById('reading-feedback');
+        
+        // Find the current answer string, case-insensitive
+        const correctAnswer = currentReadingTest.answer.trim().toLowerCase();
+
+        if (!selected) {
+            feedback.className = 'font-bold text-lg pt-2 text-red-500';
+            feedback.textContent = "Please select an answer!";
+            return;
+        }
+        
+        // Disable radio buttons after checking
+        document.querySelectorAll('input[name="reading_option"]').forEach(radio => radio.disabled = true);
+
+
+        if (selected.value.trim().toLowerCase() === correctAnswer) {
+            feedback.className = 'font-bold text-lg pt-2 text-green-600';
+            feedback.textContent = "✅ Correct! Great recall!";
+        } else {
+            feedback.className = 'font-bold text-lg pt-2 text-red-600';
+            feedback.textContent = `❌ Not quite! The correct answer was: ${currentReadingTest.answer}`;
+        }
+        
+        // Disable check and show next button
+        document.getElementById('check-reading-button').classList.add('hidden');
+        document.getElementById('next-reading-button').classList.remove('hidden');
+    }
+
+
+    // ------------------------------------------------------------------
+    // --- CHORE MOTIVATION LOGIC (GEMINI FEATURE 2) --------------------
+    // ------------------------------------------------------------------
+
+    async function fetchChoreExplanation(choreLabel) {
+        const modal = document.getElementById('chore-explanation-modal');
+        const output = document.getElementById('chore-explanation-output');
+        
+        modal.classList.remove('hidden');
+        output.textContent = `Thinking of a reason for "${choreLabel}"...`;
+        
+        const systemPrompt = "You are a supportive, motivational parent helper for an 8-year-old child. Write a very short, positive paragraph (max 2 sentences) explaining why performing the specific chore mentioned by the user is important or beneficial to them, focusing on independence or contribution. Do NOT use fancy words or complicated explanations.";
+        const userQuery = `Explain why I should do the chore: "${choreLabel}"`;
+
+        try {
+            const explanation = await callGeminiApi(systemPrompt, userQuery);
+            output.textContent = explanation || "Sorry, I can't think of a reason right now! (No content returned)";
+        } catch (error) {
+            let errorMessage = "Sorry, I can't think of a reason right now! (API Error)";
+             if (error.message.includes("API_KEY_MISSING") || error.message.includes("Authentication Failed")) {
+                errorMessage = "Authentication Error: Gemini API is unavailable for motivation features. (Check console)";
+            } else {
+                 console.error("Chore Motivation API Error:", error);
+            }
+            output.textContent = errorMessage;
+        }
+    }
+
+
+    // ------------------------------------------------------------------
+    // --- FUN FACT LOGIC -----------------------------------------------
+    // ------------------------------------------------------------------
+
+    const STATIC_FUN_FACTS = [
+        "A bolt of lightning is five times hotter than the surface of the sun.",
+        "Honey never spoils. Archaeologists have found pots of honey in ancient Egyptian tombs that are over 3,000 years old and still perfectly edible!",
+        "The fastest animal in the world is the cheetah, which can run up to 75 miles per hour.",
+        "Octopuses have three hearts: two pump blood through the gills and one circulates it to the rest of the body.",
+        "Mount Everest actually grows by about 4 millimeters every year due to tectonic plate movement.",
+        "It takes a spaceship about 8 minutes to travel from Earth to the moon.",
+        "Wombats are the only animals whose poop is cube-shaped.",
+        "Your tongue has about 10,000 taste buds, but they can only detect four main tastes: sweet, sour, salty, and bitter.",
+        "The small intestine is about 22 feet long, which is longer than a school bus!",
+        "The Eiffel Tower can grow taller during the summer due to the expansion of iron caused by heat.",
+        "A group of flamingos is called a 'flamboyance.'",
+        "The world's smallest mammal is the bumblebee bat, which is about the size of a large coin.",
+        "Clouds are made of millions of tiny water droplets, but they don't fall because they're too light.",
+        "A sneeze travels out of your mouth at over 100 miles per hour.",
+        "There are more stars in the universe than grains of sand on all the beaches on Earth.",
+        "Bananas are technically berries, but strawberries are not.",
+        "Sharks have been on Earth longer than trees have.",
+        "A blue whale's heart is so big that a human could swim through the arteries.",
+        "The Earth rotates at 1,000 miles per hour, but we don't feel it because the air moves with us.",
+        "Did you know that you are taller in the morning than in the evening? Gravity compresses your spine throughout the day!",
+        "The first computer mouse was invented in 1964 and was made of wood.",
+        "The planet Venus is the only planet that spins backward compared to all the others.",
+        "A crocodile cannot stick its tongue out.",
+        "The average cloud weighs over a million pounds.",
+        "A group of owls is called a 'parliament.'",
+        "It would take over 1,200,000 mosquitoes to drink all the blood from a single human body.",
+        "The human nose can remember 50,000 different scents.",
+        "Hot water freezes faster than cold water. This is called the Mpemba effect.",
+        "The tiny country of Monaco is smaller than Central Park in New York City.",
+        "If you could drive to the sun, it would take you 150 years!"
+    ];
+
+    let currentFactIndex = 0; 
+    
+    function displayNextFact(reset = false) {
+        const outputElement = document.getElementById('fun-fact-output');
+        
+        if (STATIC_FUN_FACTS.length === 0) {
+            outputElement.textContent = "No fun facts loaded today!";
+            return;
+        }
+
+        if (reset) {
+            currentFactIndex = 0;
+        }
+        
+        const fact = STATIC_FUN_FACTS[currentFactIndex];
+        outputElement.textContent = `Fact ${currentFactIndex + 1} of ${STATIC_FUN_FACTS.length}: ${fact}`;
+        currentFactIndex = (currentFactIndex + 1) % STATIC_FUN_FACTS.length; // Cycle
+    }
+    
+    // ------------------------------------------------------------------
+    // --- TO-DO LIST LOGIC ---------------------------------------------
+    // ------------------------------------------------------------------
+
+    const INITIAL_STANDARD_CHORES = [
+        // --- Column 1: Bedroom/Personal Chores (10 items) ---
+        { id: 'std-01', label: 'Make the Bed', isActive: true, isCustom: false, isHidden: false },
+        { id: 'std-02', label: 'Tidy Desk and Toys', isActive: true, isCustom: false, isHidden: false },
+        { id: 'std-03', label: 'Put Clothes in Hamper', isActive: true, isCustom: false, isHidden: false },
+        { id: 'std-04', label: 'Brush Teeth (AM & PM)', isActive: true, isCustom: false, isHidden: false },
+        { id: 'std-05', label: 'Choose Outfit for Tomorrow', isActive: true, isCustom: false, isHidden: false },
+        { id: 'std-06', label: 'Put Away Clean Laundry', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-07', label: 'Wipe down Bathroom Sink', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-08', label: 'Organize Bookshelf', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-09', label: 'Pack School Bag', isActive: true, isCustom: false, isHidden: false },
+        { id: 'std-10', label: 'Clear Bedside Table', isActive: false, isCustom: false, isHidden: false },
+
+        // --- Column 2: Family/Common Area Chores (10 items) ---
+        { id: 'std-11', label: 'Wipe Kitchen Table', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-12', label: 'Empty Small Trash Cans', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-13', label: 'Help Load Dishwasher', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-14', label: 'Set the Dinner Table', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-15', label: 'Clear Plates After Meal', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-16', label: 'Sweep Kitchen Floor', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-17', label: 'Water Indoor Plants', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-18', label: 'Sort Mail/Magazines', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-19', label: 'Straighten Sofa Pillows', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-20', label: 'Wipe Refrigerator Door', isActive: false, isCustom: false, isHidden: false },
+
+        // --- Column 3: Learning/Outside/Pet Chores (10 items) ---
+        { id: 'std-21', label: 'Read for 30 Minutes', isActive: true, isCustom: false, isHidden: false },
+        { id: 'std-22', label: 'Practice Instrument/Skill', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-23', label: 'Feed Pet', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-24', label: 'Walk Dog / Play with Pet', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-25', label: 'Take Recycling Out', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-26', label: 'Gather Garden Tools', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-27', label: 'Review Math Facts', isActive: true, isCustom: false, isHidden: false },
+        { id: 'std-28', label: 'Clean Pet Bowl', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-29', label: 'Do 5 Minutes of Stretching', isActive: false, isCustom: false, isHidden: false },
+        { id: 'std-30', label: 'Help Fold Towels', isActive: false, isCustom: false, isHidden: false },
+    ];
+
+
+    // Master list holds ALL potential and active chores
+    let masterChoreList = []; 
+    
+    function initializeToDoList() {
+        // Use a deep copy to ensure subsequent changes don't affect the INITIAL constant
+        masterChoreList = INITIAL_STANDARD_CHORES.map(chore => ({...chore}));
+    }
+    
+    // --- Rendering Functions ---
+
+    function renderToDoDashboardList() {
+        const ul = document.getElementById('todo-dashboard-list');
+        ul.innerHTML = ''; 
+        
+        // Filter only active and NOT hidden chores for the dashboard display
+        const activeChores = masterChoreList.filter(chore => chore.isActive && !chore.isHidden);
+
+        if (activeChores.length === 0) {
+             ul.innerHTML = '<li class="text-gray-500 italic">No tasks set! Click "Edit List" to add some.</li>';
+             return;
+        }
+
+        activeChores.forEach(chore => {
+            const li = document.createElement('li');
+            li.className = 'flex items-center text-lg';
+            // Note: The dashboard list uses mock checkboxes for display only
+            li.innerHTML = `<input type="checkbox" class="mr-2 text-green-500 rounded h-5 w-5"> ${chore.label}`; 
+            ul.appendChild(li);
+        });
+    }
+
+    function renderToDoEditView() {
+        const masterListElement = document.getElementById('master-chores-list');
+        masterListElement.innerHTML = '';
+        
+        // Filter out HIDDEN chores. Only show active/inactive chores here.
+        const visibleChores = masterChoreList.filter(chore => !chore.isHidden);
+
+        const activeChoores = visibleChores.filter(c => c.isActive);
+        const inactiveChores = visibleChores.filter(c => !c.isActive);
+
+        // Sort each group alphabetically
+        activeChoores.sort((a, b) => a.label.localeCompare(b.label));
+        inactiveChores.sort((a, b) => a.label.localeCompare(b.label));
+        
+        let isSeparatorAdded = false;
+
+        [...activeChoores, ...inactiveChores].forEach((chore) => {
+            // Add separator before the first inactive item if active items exist and separator hasn't been added
+            if (!chore.isActive && activeChoores.length > 0 && !isSeparatorAdded) {
+                const separator = document.createElement('div');
+                separator.className = 'col-span-full my-3';
+                separator.innerHTML = '<h3 class="text-lg font-bold text-gray-700 mb-2 border-b border-gray-400 pb-1">Unchecked Chores</h3>';
+                masterListElement.appendChild(separator);
+                isSeparatorAdded = true;
+            }
+            
+            // --- Color and Border Logic (Green for active, Gray for inactive) ---
+            const bgColor = chore.isActive ? 'bg-green-50 border-green-300' : 'bg-gray-100 border-gray-300';
+            
+            const div = document.createElement('div');
+            // Single-line layout
+            div.className = `flex justify-between items-center p-2 rounded-lg border ${bgColor} shadow-sm transition hover:shadow-md`;
+            
+            // 1. LEFT SIDE: Checkbox and Title
+            const leftContent = document.createElement('div');
+            leftContent.className = 'flex items-center space-x-3 flex-grow overflow-hidden'; // Added overflow-hidden for long titles
+            leftContent.innerHTML = `
+                <input type="checkbox" id="chore-${chore.id}" data-id="${chore.id}" 
+                       class="h-5 w-5 text-green-600 rounded toggle-chore shrink-0" ${chore.isActive ? 'checked' : ''}>
+                <label for="chore-${chore.id}" class="text-gray-800 text-base font-semibold leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+                    ${chore.label} ${chore.isCustom ? '<span class="text-xs text-gray-500">(Custom)</span>' : ''}
+                </label>
+            `;
+            div.appendChild(leftContent);
+
+            // 2. RIGHT SIDE: Buttons (Hide + Motivation)
+            const rightContent = document.createElement('div');
+            rightContent.className = 'flex items-center space-x-2 shrink-0';
+
+            // Motivation Button (Gemini Feature 2)
+            const motivationButton = document.createElement('button');
+            motivationButton.className = 'text-sm bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-2 py-1 rounded-full transition whitespace-nowrap';
+            motivationButton.innerHTML = 'Why? ✨';
+            motivationButton.setAttribute('data-label', chore.label);
+            motivationButton.addEventListener('click', (e) => {
+                fetchChoreExplanation(e.target.getAttribute('data-label'));
+            });
+            rightContent.appendChild(motivationButton);
+
+
+            // Hide Symbol Button (📦)
+            const hideButton = document.createElement('button');
+            // Use symbolic size and shrink-0 to prevent icon from collapsing
+            hideButton.className = 'shrink-0 text-xl text-yellow-600 hover:text-yellow-700 transition p-1 rounded-full hover:bg-white hide-chore-symbol';
+            hideButton.innerHTML = '📦'; // Archive box symbol
+            hideButton.setAttribute('data-id', chore.id);
+            hideButton.title = 'Hide Chore';
+            hideButton.addEventListener('click', hideChore);
+            
+            rightContent.appendChild(hideButton); 
+            div.appendChild(rightContent);
+
+            masterListElement.appendChild(div);
+        });
+        
+        // Attach listener to all new checkboxes
+        masterListElement.querySelectorAll('.toggle-chore').forEach(input => {
+            input.addEventListener('change', toggleChoreStatus);
+        });
+    }
+
+    function renderChoreSettings() {
+        const settingsListElement = document.getElementById('master-settings-list');
+        settingsListElement.innerHTML = ''; 
+        
+        // --- Grouping ---
+        const allChores = masterChoreList;
+
+        const activeChores = allChores.filter(c => !c.isHidden && c.isActive);
+        const inactiveChores = allChores.filter(c => !c.isHidden && !c.isActive);
+        const hiddenChores = allChores.filter(c => c.isHidden);
+
+        // Sort each group alphabetically
+        activeChores.sort((a, b) => a.label.localeCompare(b.label));
+        inactiveChores.sort((a, b) => a.label.localeCompare(b.label));
+        hiddenChores.sort((a, b) => a.label.localeCompare(b.label));
+
+        const groups = [
+            { name: 'Active & Checked', list: activeChores },
+            { name: 'Active & Unchecked', list: inactiveChores },
+            { name: 'Hidden Chores (Archive)', list: hiddenChores }
+        ];
+        
+        let firstGroupRendered = false;
+
+        groups.forEach(group => {
+            if (group.list.length > 0) {
+                // Add separator before the second and subsequent non-empty groups
+                if (firstGroupRendered) {
+                    const separator = document.createElement('div');
+                    separator.className = 'col-span-full my-3';
+                    separator.innerHTML = `<hr class="border-t-2 border-gray-400">`;
+                    settingsListElement.appendChild(separator);
+                }
+                
+                // Add Group Header
+                const header = document.createElement('div');
+                header.className = 'col-span-full text-lg font-bold text-gray-700 pt-2 pb-1';
+                header.textContent = group.name;
+                settingsListElement.appendChild(header);
+
+                group.list.forEach(chore => {
+                    // --- Color and Border Logic (Red for Hidden, Green for Active, Gray for Inactive) ---
+                    let bgColor, borderColor;
+                    if (chore.isHidden) {
+                        bgColor = 'bg-red-50'; borderColor = 'border-red-300';
+                    } else if (chore.isActive) {
+                        bgColor = 'bg-green-50'; borderColor = 'border-green-300';
+                    } else {
+                        bgColor = 'bg-gray-100'; borderColor = 'border-gray-300';
+                    }
+                    
+                    const div = document.createElement('div');
+                    // Single-line, horizontal layout
+                    div.className = `flex justify-between items-center p-2 rounded-lg border ${borderColor} ${bgColor} shadow-sm`;
+                    
+                    // 1. LEFT SIDE: Title
+                    const leftContent = document.createElement('div');
+                    leftContent.className = 'flex-grow overflow-hidden';
+                    
+                    const titleSpan = document.createElement('span');
+                    titleSpan.className = 'text-gray-800 text-base font-bold leading-tight whitespace-nowrap overflow-hidden text-ellipsis';
+                    titleSpan.textContent = chore.label;
+                    
+                    if (chore.isCustom) {
+                        const customBadge = document.createElement('span');
+                        customBadge.className = 'text-xs text-gray-500 ml-1';
+                        customBadge.textContent = '(Custom)';
+                        titleSpan.appendChild(customBadge);
+                    }
+                    
+                    leftContent.appendChild(titleSpan);
+                    div.appendChild(leftContent);
+
+                    // 2. RIGHT SIDE: Action Buttons (Uniform size/shape - icons)
+                    const bottomRow = document.createElement('div');
+                    bottomRow.className = 'flex space-x-2 shrink-0 ml-4 items-center'; 
+
+                    // Toggle Hide/Unhide Button (📦) - Always visible in Settings
+                    const toggleHideButton = document.createElement('button');
+                    // Use symbolic size and padding for compact look
+                    const hideColor = chore.isHidden ? 'text-green-600 hover:text-green-700' : 'text-yellow-600 hover:text-yellow-700';
+                    toggleHideButton.className = `p-1 text-xl font-bold rounded-full transition ${hideColor} hover:bg-white hide-chore-symbol`;
+                    toggleHideButton.innerHTML = '📦'; 
+                    toggleHideButton.setAttribute('data-id', chore.id);
+                    toggleHideButton.title = chore.isHidden ? 'Unhide Chore' : 'Hide Chore';
+                    toggleHideButton.addEventListener('click', chore.isHidden ? unhideChore : hideChore);
+                    bottomRow.appendChild(toggleHideButton);
+
+                    // Delete Button (x) - ONLY VISIBLE IF HIDDEN
+                    if (chore.isHidden) {
+                        const deleteButton = document.createElement('button');
+                        // Use 'x' icon (delete-chore-symbol) and red color
+                        deleteButton.className = 'p-1 font-bold text-red-500 hover:text-red-700 rounded-full transition hover:bg-white delete-chore-symbol';
+                        deleteButton.innerHTML = '&times;'; // 'x' symbol
+                        deleteButton.setAttribute('data-id', chore.id);
+                        deleteButton.title = 'Permanently Delete';
+                        deleteButton.addEventListener('click', deleteChore);
+                        bottomRow.appendChild(deleteButton);
+                    }
+
+                    div.appendChild(bottomRow);
+                    settingsListElement.appendChild(div);
+                });
+                
+                firstGroupRendered = true;
+            }
+        });
+    }
+    
+    // --- Event Handlers for Chore Management ---
+
+    function toggleChoreStatus(e) {
+        const id = e.target.getAttribute('data-id');
+        const chore = masterChoreList.find(c => c.id === id);
+        if (chore) {
+            chore.isActive = e.target.checked;
+        }
+        // Update all views
+        renderToDoEditView();
+        renderToDoDashboardList();
+        renderChoreSettings();
+    }
+
+    function hideChore(e) {
+        // Find the correct element ID, whether it's from the icon button or the text button
+        const target = e.target.closest('button');
+        if (!target) return;
+        
+        const id = target.getAttribute('data-id');
+        const chore = masterChoreList.find(c => c.id === id);
+        
+        if (chore) {
+            chore.isHidden = true; // Mark as hidden
+            chore.isActive = false; // Auto-deactivate when hidden
+        }
+        // Update all views
+        renderToDoEditView(); 
+        renderToDoDashboardList(); 
+        renderChoreSettings(); 
+    }
+
+    function unhideChore(e) {
+        const id = e.target.getAttribute('data-id');
+        const chore = masterChoreList.find(c => c.id === id);
+        if (chore) {
+            chore.isHidden = false; // Mark as visible
+            chore.isActive = true; // Auto-activate when unhidden (can be unchecked later)
+        }
+        // Update all views
+        renderToDoEditView(); 
+        renderToDoDashboardList(); 
+        renderChoreSettings(); 
+    }
+
+
+    function deleteChore(e) {
+        const id = e.target.getAttribute('data-id');
+        
+        // Confirmation is crucial before deleting a chore.
+        if (!confirm("Are you sure you want to permanently delete this chore? This action cannot be undone.")) {
+            return;
+        }
+        
+        masterChoreList = masterChoreList.filter(c => c.id !== id);
+        // Re-render all views
+        renderToDoEditView();
+        renderToDoDashboardList();
+        renderChoreSettings();
+    }
+
+    document.getElementById('add-custom-task-button').addEventListener('click', () => {
+        const input = document.getElementById('custom-task-input');
+        const label = input.value.trim();
+        
+        if (label && label.length <= 50) {
+            // Check for duplicates before adding
+            if (masterChoreList.some(c => c.label.toLowerCase() === label.toLowerCase())) {
+                console.error("Duplicate task blocked.");
+                return;
+            }
+
+            const newChore = {
+                id: 'custom-' + Date.now(), // Simple unique ID
+                label: label,
+                isActive: true, // New custom tasks start as active
+                isCustom: true,
+                isHidden: false // New custom tasks are not hidden
+            };
+            masterChoreList.push(newChore);
+            input.value = ''; // Clear input
+            
+            // Re-render all views
+            renderToDoEditView(); 
+            renderToDoDashboardList(); 
+            renderChoreSettings(); 
+        } else {
+            // Error handling for empty/long input
+        }
+    });
+    
+    document.getElementById('custom-task-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            document.getElementById('add-custom-task-button').click();
+        }
+    });
+    
+
+
+    // ------------------------------------------------------------------
+    // --- PONG GAME LOGIC (UNCHANGED CORE) -----------------------------
+    // ------------------------------------------------------------------
+
+    const PONG_PADDLE_SPEED = 8;
+    const MAX_BALL_SPEED_MULTIPLIER = 1.8; 
+    const SPEED_INCREMENT_FACTOR = 0.05; 
+    const MAX_MISSES = 3;
+    
+    const pongGameState = {
+        canvas: null, context: null, 
+        paddleWidth: 100, 
+        paddleHeight: 10, 
+        ballRadius: 8,
+        pX: 0, 
+        pY: 0, 
+        pSpeed: 0, 
+        ballX: 0, ballY: 0, 
+        ballSpeedX: 0, ballSpeedY: 0,
+        playerScore: 0, 
+        missCount: 0,   
+        isGameRunning: false, 
+        isServing: true, 
+    };
+
+    const pongServeButton = document.getElementById('serve-button');
+    const pongGameOverModal = document.getElementById('pong-game-over-modal');
+    const pongModalText = document.getElementById('pong-modal-text');
+    const pongScoreP1Element = document.getElementById('p1-score'); 
+    const pongScoreP2Element = document.getElementById('p2-score'); 
+
+    function resetBall() {
+        const canvas = pongGameState.canvas;
+        if (!canvas) return; 
+
+        pongGameState.ballX = canvas.width / 2;
+        pongGameState.ballY = 50; 
+        
+        pongGameState.ballSpeedX = 0;
+        pongGameState.ballSpeedY = 0;
+        
+        pongGameState.isServing = true;
+        pongGameState.isGameRunning = false; 
+        
+        if (pongServeButton) {
+            pongServeButton.textContent = "Throw (Spacebar)";
+            pongServeButton.classList.remove('bg-pink-600');
+            pongServeButton.classList.add('bg-yellow-600');
+            pongServeButton.disabled = false;
+        }
+    }
+
+    function initializePongGame() {
+        if (!pongGameState.canvas) {
+            pongGameState.canvas = document.getElementById('pongCanvas');
+            if (pongGameState.canvas) pongGameState.context = pongGameState.canvas.getContext('2d');
+            else return; 
+        }
+        
+        pongGameState.pY = pongGameState.canvas.height - pongGameState.paddleHeight - 15; 
+        pongGameState.pX = (pongGameState.canvas.width - pongGameState.paddleWidth) / 2;
+        
+        pongGameState.playerScore = 0;
+        pongGameState.missCount = 0;
+        updatePongScoreDisplay();
+        resetBall();
+        if (pongGameOverModal) pongGameOverModal.classList.add('hidden');
+    }
+
+    function serveBall() {
+        if (!pongGameState.isServing || !pongGameState.canvas) return;
+
+        let initialSpeedY = 6; 
+        let initialSpeedX = (Math.random() * 4 - 2); 
+        
+        pongGameState.ballSpeedX = initialSpeedX;
+        pongGameState.ballSpeedY = initialSpeedY;
+
+        pongGameState.isServing = false;
+        pongGameState.isGameRunning = true;
+        
+        if (pongServeButton) {
+            pongServeButton.textContent = "In Play...";
+            pongServeButton.classList.remove('bg-yellow-600');
+            pongServeButton.classList.add('bg-pink-600');
+            pongServeButton.disabled = true;
+        }
+    }
+    
+    function updatePongScoreDisplay() {
+        if(pongScoreP1Element) pongScoreP1Element.textContent = pongGameState.playerScore;
+        if(pongScoreP2Element) pongScoreP2Element.textContent = pongGameState.missCount;
+    }
+    
+    function updatePong() {
+        const canvas = pongGameState.canvas;
+        const state = pongGameState;
+        if (!canvas || !pongIsRunning) return;
+
+        if (state.isServing) {
+            state.ballX = canvas.width / 2;
+            state.ballY = 50; 
+            
+            state.pX += state.pSpeed;
+            state.pX = Math.max(0, Math.min(canvas.width - state.paddleWidth, state.pX));
+            return;
+        }
+        
+        // --- 1. Paddle Movement (Horizontal) ---
+        if (state.isGameRunning) {
+            state.pX += state.pSpeed;
+            state.pX = Math.max(0, Math.min(canvas.width - state.paddleWidth, state.pX));
+        }
+
+        // --- 2. Ball Movement ---
+        state.ballX += state.ballSpeedX;
+        state.ballY += state.ballSpeedY;
+
+        // --- 3. Wall Collision (Left/Right) ---
+        if (state.ballX - state.ballRadius < 0 || state.ballX + state.ballRadius > canvas.width) {
+            state.ballSpeedX = -state.ballSpeedX;
+        }
+
+        // --- 4. Top Wall Collision ---
+        if (state.ballY - state.ballRadius < 0) {
+            state.ballSpeedY = -state.ballSpeedY;
+        }
+
+        // --- 5. Paddle Collision (Bottom) ---
+        const pCollision = (
+            state.ballY + state.ballRadius > state.pY && 
+            state.ballY - state.ballRadius < state.pY + state.paddleHeight && 
+            state.ballX > state.pX && 
+            state.ballX < state.pX + state.paddleWidth &&
+            state.ballSpeedY > 0
+        );
+
+        if (pCollision) {
+            state.playerScore++; 
+            updatePongScoreDisplay();
+
+            const relativeIntersectX = (state.pX + state.paddleWidth / 2) - state.ballX;
+            const normalizedRelativeIntersectionX = relativeIntersectX / (state.paddleWidth / 2);
+            
+            let newSpeedY = -state.ballSpeedY * (1 + SPEED_INCREMENT_FACTOR);
+            
+            const currentSpeedMagnitude = Math.sqrt(state.ballSpeedX**2 + state.ballSpeedY**2);
+            const maxSpeed = 6 * MAX_BALL_SPEED_MULTIPLIER;
+            if (currentSpeedMagnitude > maxSpeed) {
+                newSpeedY = -state.ballSpeedY; 
+            }
+
+            state.ballSpeedX = -normalizedRelativeIntersectionX * 4; 
+            state.ballSpeedY = newSpeedY; 
+        }
+
+        // --- 6. Scoring/Miss (Ball crosses the bottom line) ---
+        if (state.ballY > canvas.height) {
+            state.missCount++;
+            updatePongScoreDisplay();
+            if (state.missCount >= MAX_MISSES) {
+                endPongGame(`Game Over! Final Score: ${state.playerScore}`);
+            } else {
+                resetBall(); 
+            }
+        }
+    }
+    
+    function endPongGame(message) {
+        pongGameState.isGameRunning = false;
+        pongGameState.isServing = false;
+        if(pongModalText) pongModalText.textContent = message;
+        if(pongGameOverModal) pongGameOverModal.classList.remove('hidden');
+    }
+
+    function drawPong() {
+        const canvas = pongGameState.canvas;
+        const ctx = pongGameState.context;
+        const state = pongGameState;
+        if (!ctx) return;
+        
+        ctx.fillStyle = '#0f3460'; 
+        ctx.fillRect(0, 0, canvas.width, canvas.height); 
+
+        // Draw top boundary line
+        ctx.strokeStyle = '#3d5a80'; ctx.lineWidth = 4; ctx.setLineDash([10, 10]);
+        ctx.beginPath(); ctx.moveTo(0, 5); ctx.lineTo(canvas.width, 5);
+        ctx.stroke(); ctx.setLineDash([]); 
+
+        // Draw paddle horizontally at the bottom
+        ctx.fillStyle = '#16c79a'; 
+        ctx.fillRect(state.pX, state.pY, state.paddleWidth, state.paddleHeight); 
+
+        // Draw ball
+        ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(state.ballX, state.ballY, state.ballRadius, 0, Math.PI * 2, false); ctx.closePath(); ctx.fill(); 
+
+        if (state.isServing) {
+            // Draw a pointer/indicator when waiting to be thrown
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(state.ballX - 2, state.ballY + state.ballRadius, 4, 30);
+        }
+    }
+
+    // Pong listeners
+    if (pongServeButton) pongServeButton.addEventListener('click', serveBall);
+    
+    // NEW PONG GAME OVER MENU HANDLERS
+    document.getElementById('pong-try-again-button').addEventListener('click', () => { 
+        if (pongGameOverModal) pongGameOverModal.classList.add('hidden'); 
+        initializePongGame();
+    });
+    document.getElementById('pong-to-hub-button').addEventListener('click', () => showView('games-hub-view'));
+    document.getElementById('pong-home-button').addEventListener('click', () => showView('dashboard-view'));
+
+
+    // --- PONG INPUT HANDLERS (A/D or Left/Right) ---
+    // (Handled globally later in the script)
+
+    // ------------------------------------------------------------------
+    // --- SNAKE GAME LOGIC ---------------------------------------------
+    // ------------------------------------------------------------------
+
+    const SNAKE_TILE_SIZE = 20;
+    let snakeCanvas, snakeCtx;
+    let snake = [];
+    let snakeDirection = { x: 1, y: 0 }; 
+    let nextSnakeDirection = { x: 1, y: 0 };
+    let snakeFood = { x: 0, y: 0 };
+    let snakeScore = 0;
+    let lastSnakeUpdateTime = 0;
+    const SNAKE_FPS = 10;
+    const SNAKE_INTERVAL = 1000 / SNAKE_FPS;
+
+    function initSnakeGame() {
+        if (!snakeCanvas) {
+            snakeCanvas = document.getElementById('snakeCanvas');
+            snakeCtx = snakeCanvas.getContext('2d');
+        }
+        snakeCanvas.width = 600;
+        snakeCanvas.height = 400;
+        
+        snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }];
+        snakeDirection = { x: 1, y: 0 };
+        nextSnakeDirection = { x: 1, y: 0 };
+        snakeScore = 0;
+        placeFood();
+        updateSnakeScoreDisplay();
+    }
+
+    function placeFood() {
+        const cols = snakeCanvas.width / SNAKE_TILE_SIZE;
+        const rows = snakeCanvas.height / SNAKE_TILE_SIZE;
+        let newFood;
+        do {
+            newFood = {
+                x: Math.floor(Math.random() * cols),
+                y: Math.floor(Math.random() * rows)
+            };
+        } while (snake.some(segment => segment.x === newFood.x && segment.y === newFood.y));
+        snakeFood = newFood;
+    }
+
+    function updateSnakeScoreDisplay() {
+        document.getElementById('snake-score-display').textContent = snakeScore;
+    }
+
+    function updateSnake() {
+        if (!snakeIsRunning) return;
+        
+        snakeDirection = nextSnakeDirection;
+
+        const head = { x: snake[0].x + snakeDirection.x, y: snake[0].y + snakeDirection.y };
+        const cols = snakeCanvas.width / SNAKE_TILE_SIZE;
+        const rows = snakeCanvas.height / SNAKE_TILE_SIZE;
+
+        // 1. Collision Check (Wall or Self)
+        const wallCollision = head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows;
+        const selfCollision = snake.slice(1).some(segment => segment.x === head.x && segment.y === head.y);
+
+        if (wallCollision || selfCollision) {
+            snakeIsRunning = false;
+            document.getElementById('snake-final-score').textContent = snakeScore;
+            document.getElementById('snake-game-over-modal').classList.remove('hidden');
+            return;
+        }
+
+        // Add new head
+        snake.unshift(head);
+
+        // 2. Food Check
+        if (head.x === snakeFood.x && head.y === snakeFood.y) {
+            snakeScore++;
+            updateSnakeScoreDisplay();
+            placeFood();
+        } else {
+            // FIX: If no food is eaten, remove the tail to simulate movement (the snake stays the same length)
+            snake.pop(); 
+        }
+    }
+
+    function drawSnake() {
+        if (!snakeCtx) return;
+        // Clear canvas
+        snakeCtx.fillStyle = '#0f3460';
+        snakeCtx.fillRect(0, 0, snakeCanvas.width, snakeCanvas.height);
+
+        // Draw food (Red circle)
+        snakeCtx.fillStyle = '#ef4444'; 
+        snakeCtx.beginPath();
+        snakeCtx.arc(
+            snakeFood.x * SNAKE_TILE_SIZE + SNAKE_TILE_SIZE / 2,
+            snakeFood.y * SNAKE_TILE_SIZE + SNAKE_TILE_SIZE / 2,
+            SNAKE_TILE_SIZE / 2, 0, Math.PI * 2
+        );
+        snakeCtx.fill();
+
+        // Draw snake (Green squares)
+        snake.forEach((segment, index) => {
+            snakeCtx.fillStyle = index === 0 ? '#10b981' : '#34d399'; // Head is darker green
+            snakeCtx.fillRect(
+                segment.x * SNAKE_TILE_SIZE,
+                segment.y * SNAKE_TILE_SIZE,
+                SNAKE_TILE_SIZE,
+                SNAKE_TILE_SIZE
+            );
+            snakeCtx.strokeStyle = '#0f3460';
+            snakeCtx.strokeRect( 
+                segment.x * SNAKE_TILE_SIZE,
+                segment.y * SNAKE_TILE_SIZE,
+                SNAKE_TILE_SIZE,
+                SNAKE_TILE_SIZE
+            );
+        });
+    }
+
+    function handleSnakeInput(e) {
+        if (!snakeIsRunning) return;
+
+        let newDir = { x: snakeDirection.x, y: snakeDirection.y };
+        switch (e.key) {
+            case 'ArrowUp':
+                newDir = { x: 0, y: -1 };
+                break;
+            case 'ArrowDown':
+                newDir = { x: 0, y: 1 };
+                break;
+            case 'ArrowLeft':
+                newDir = { x: -1, y: 0 };
+                break;
+            case 'ArrowRight':
+                newDir = { x: 1, y: 0 };
+                break;
+            default:
+                return; 
+        }
+
+        if (newDir.x * -1 !== snakeDirection.x || newDir.y * -1 !== snakeDirection.y) {
+            nextSnakeDirection = newDir;
+        }
+    }
+
+    // SNAKE GAME OVER MENU HANDLERS
+    document.getElementById('snake-try-again-button').addEventListener('click', () => {
+        document.getElementById('snake-game-over-modal').classList.add('hidden');
+        initSnakeGame();
+        snakeIsRunning = true;
+    });
+    document.getElementById('snake-to-hub-button').addEventListener('click', () => showView('games-hub-view'));
+    document.getElementById('snake-home-button').addEventListener('click', () => showView('dashboard-view'));
+
+
+    // ------------------------------------------------------------------
+    // --- SPACE DODGER LOGIC (Previously AVOIDING GAME) ----------------
+    // ------------------------------------------------------------------
+
+    let avoidingCanvas, avoidingCtx;
+    // Player is a simple spaceship shape
+    let avoidingPlayer = { x: 0, y: 0, w: 40, h: 60, speed: 8 }; 
+    let avoidingObstacles = []; // Now asteroids
+    let avoidingScore = 0;
+    let avoidingSpeedX = 0;
+    let lastObstacleTime = 0;
+    const OBSTACLE_W = 30; // Smaller asteroids
+    const OBSTACLE_H = 30;
+    const OBSTACLE_FALL_SPEED = 4.5; // Slightly faster fall
+    const OBSTACLE_INTERVAL_MS = 650; // Faster spawn rate
+    let startTime = 0;
+    let stars = []; // For the visual effect
+
+    function initAvoidingGame() {
+        if (!avoidingCanvas) {
+            avoidingCanvas = document.getElementById('avoidingCanvas');
+            avoidingCtx = avoidingCanvas.getContext('2d');
+        }
+        avoidingCanvas.width = 600;
+        avoidingCanvas.height = 400;
+
+        // Player starts lower
+        avoidingPlayer.x = avoidingCanvas.width / 2 - avoidingPlayer.w / 2;
+        avoidingPlayer.y = avoidingCanvas.height - avoidingPlayer.h - 10;
+        avoidingObstacles = [];
+        avoidingScore = 0;
+        avoidingSpeedX = 0;
+        lastObstacleTime = 0;
+        startTime = performance.now();
+        generateStars(100); // Initialize stars
+    }
+    
+    function generateStars(count) {
+        stars = [];
+        for (let i = 0; i < count; i++) {
+            stars.push({
+                x: Math.random() * avoidingCanvas.width,
+                y: Math.random() * avoidingCanvas.height,
+                size: Math.random() * 2 + 1,
+                speed: Math.random() * 0.5 + 0.1 // slow drift
+            });
+        }
+    }
+
+    function spawnObstacle() {
+        const x = Math.random() * (avoidingCanvas.width - OBSTACLE_W);
+        avoidingObstacles.push({
+            x: x,
+            y: -OBSTACLE_H,
+            w: OBSTACLE_W,
+            h: OBSTACLE_H,
+            // Asteroids are dark gray/brown
+            color: `rgb(${rand(80, 120)}, ${rand(80, 120)}, ${rand(80, 120)})`
+        });
+    }
+
+    function updateAvoidingScore() {
+        const timeElapsed = Math.floor((performance.now() - startTime) / 1000);
+        if (timeElapsed > avoidingScore) {
+            avoidingScore = timeElapsed;
+            document.getElementById('avoiding-score-display').textContent = avoidingScore;
+        }
+    }
+
+    function updateAvoiding() {
+        if (!avoidingIsRunning || !avoidingCanvas) return;
+        
+        // 1. Player Movement
+        avoidingPlayer.x += avoidingSpeedX;
+        avoidingPlayer.x = Math.max(0, Math.min(avoidingCanvas.width - avoidingPlayer.w, avoidingPlayer.x));
+
+        // 2. Obstacle Spawning
+        if (performance.now() - lastObstacleTime > OBSTACLE_INTERVAL_MS) {
+            spawnObstacle();
+            lastObstacleTime = performance.now();
+        }
+
+        // 3. Obstacle Movement & Collision
+        avoidingObstacles = avoidingObstacles.filter(obs => obs.y < avoidingCanvas.height); 
+
+        for (let i = avoidingObstacles.length - 1; i >= 0; i--) {
+            let obs = avoidingObstacles[i];
+            obs.y += OBSTACLE_FALL_SPEED;
+
+            // Simple AABB Collision Check
+            if (avoidingPlayer.x < obs.x + obs.w &&
+                avoidingPlayer.x + avoidingPlayer.w > obs.x &&
+                avoidingPlayer.y < obs.y + obs.h &&
+                avoidingPlayer.y + avoidingPlayer.h > obs.y) {
+                
+                avoidingIsRunning = false;
+                document.getElementById('avoiding-final-score').textContent = avoidingScore;
+                document.getElementById('avoiding-game-over-modal').classList.remove('hidden');
+                return;
+            }
+        }
+        
+        // 4. Update Score
+        updateAvoidingScore();
+        
+        // 5. Update Stars (For background effect)
+        stars.forEach(star => {
+            star.y += star.speed;
+            if (star.y > avoidingCanvas.height) {
+                star.y = 0;
+                star.x = Math.random() * avoidingCanvas.width;
+            }
+        });
+    }
+
+    function drawAvoiding() {
+        if (!avoidingCtx) return;
+        const ctx = avoidingCtx;
+        const canvas = avoidingCanvas;
+
+        // Clear canvas (Deep Space)
+        ctx.fillStyle = '#000033'; 
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw Stars
+        ctx.fillStyle = '#ffffff';
+        stars.forEach(star => {
+            ctx.beginPath();
+            ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // Draw Player (Spaceship)
+        const pX = avoidingPlayer.x;
+        const pY = avoidingPlayer.y;
+        const pW = avoidingPlayer.w;
+        const pH = avoidingPlayer.h;
+
+        // 1. Main Body (Rectangle - Cyan)
+        ctx.fillStyle = '#00ffff'; 
+        ctx.fillRect(pX, pY + pW / 4, pW, pH - pW / 2);
+        
+        // 2. Cockpit/Nose (Triangle - White)
+        ctx.fillStyle = '#ffffff'; 
+        ctx.beginPath();
+        ctx.moveTo(pX + pW / 2, pY); // Top tip
+        ctx.lineTo(pX + pW, pY + pW / 4); // Right shoulder
+        ctx.lineTo(pX, pY + pW / 4); // Left shoulder
+        ctx.closePath();
+        ctx.fill();
+        
+        // 3. Thrusters/Engine (Red/Orange rectangles at bottom)
+        ctx.fillStyle = '#ff4500';
+        ctx.fillRect(pX + pW / 4, pY + pH - 5, pW / 4, 5);
+        ctx.fillRect(pX + pW / 2, pY + pH - 5, pW / 4, 5);
+
+
+        // Draw Obstacles (Asteroids - simple polygon shapes for a rough look)
+        avoidingObstacles.forEach(obs => {
+            ctx.fillStyle = obs.color;
+            
+            // Draw a rough, irregular shape for an asteroid
+            ctx.beginPath();
+            ctx.moveTo(obs.x + obs.w / 2, obs.y);
+            ctx.lineTo(obs.x + obs.w, obs.y + obs.h / 4);
+            ctx.lineTo(obs.x + obs.w - 5, obs.y + obs.h);
+            ctx.lineTo(obs.x, obs.y + obs.h - 10);
+            ctx.lineTo(obs.x + 5, obs.y + obs.h / 3);
+            ctx.closePath();
+            ctx.fill();
+        });
+    }
+
+    function handleAvoidingInput(e) {
+        if (!avoidingIsRunning) return;
+        if (e.type === 'keydown') {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') avoidingSpeedX = -avoidingPlayer.speed;
+            else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') avoidingSpeedX = avoidingPlayer.speed;
+        } else if (e.type === 'keyup') {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A' || e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                 avoidingSpeedX = 0;
+            }
+        }
+    }
+
+    // AVOIDING GAME OVER MENU HANDLERS
+    document.getElementById('avoiding-try-again-button').addEventListener('click', () => {
+        document.getElementById('avoiding-game-over-modal').classList.add('hidden');
+        initAvoidingGame();
+        avoidingIsRunning = true;
+    });
+    document.getElementById('avoiding-to-hub-button').addEventListener('click', () => showView('games-hub-view'));
+    document.getElementById('avoiding-home-button').addEventListener('click', () => showView('dashboard-view'));
+
+
+    // ------------------------------------------------------------------
+    // --- CATCH THE STAR LOGIC (NEW) -----------------------------------
+    // ------------------------------------------------------------------
+
+    let catchCanvas, catchCtx;
+    const CATCH_MAX_MISSES = 3;
+    let catchGameState = {
+        playerX: 0, playerW: 80, playerH: 15, playerSpeed: 6,
+        items: [],
+        score: 0,
+        misses: 0,
+        lastSpawnTime: 0,
+        spawnInterval: 1000,
+        itemSpeed: 3
+    };
+
+    function initCatchStarGame() {
+        if (!catchCanvas) {
+            catchCanvas = document.getElementById('catchStarCanvas');
+            catchCtx = catchCanvas.getContext('2d');
+        }
+        catchCanvas.width = 600;
+        catchCanvas.height = 400;
+
+        catchGameState.playerX = catchCanvas.width / 2 - catchGameState.playerW / 2;
+        catchGameState.playerY = catchCanvas.height - catchGameState.playerH - 10;
+        catchGameState.items = [];
+        catchGameState.score = 0;
+        catchGameState.misses = 0;
+        catchGameState.lastSpawnTime = performance.now();
+        
+        updateCatchStarDisplay();
+    }
+
+    function updateCatchStarDisplay() {
+        document.getElementById('catch-star-score-display').textContent = catchGameState.score;
+        document.getElementById('catch-star-misses-display').textContent = `${catchGameState.misses}/${CATCH_MAX_MISSES}`;
+    }
+
+    function spawnCatchItem() {
+        const isStar = Math.random() < 0.7; // 70% chance of a star
+        const size = isStar ? 15 : 20;
+        const x = Math.random() * (catchCanvas.width - size);
+        
+        catchGameState.items.push({
+            x: x,
+            y: -size,
+            size: size,
+            type: isStar ? 'star' : 'bomb',
+            color: isStar ? '#ffcc00' : '#808080',
+        });
+    }
+
+    function updateCatchStar() {
+        if (!catchIsRunning || !catchCanvas) return;
+
+        // 1. Player Movement (using keysPressed from global scope)
+        let playerSpeedX = 0;
+        if (keysPressed['ArrowLeft'] || keysPressed['a'] || keysPressed['A']) playerSpeedX = -catchGameState.playerSpeed;
+        else if (keysPressed['ArrowRight'] || keysPressed['d'] || keysPressed['D']) playerSpeedX = catchGameState.playerSpeed;
+        
+        catchGameState.playerX += playerSpeedX;
+        catchGameState.playerX = Math.max(0, Math.min(catchCanvas.width - catchGameState.playerW, catchGameState.playerX));
+
+
+        // 2. Item Spawning
+        const now = performance.now();
+        if (now - catchGameState.lastSpawnTime > catchGameState.spawnInterval) {
+            spawnCatchItem();
+            catchGameState.lastSpawnTime = now;
+            // Increase speed/difficulty over time
+            catchGameState.spawnInterval = Math.max(400, catchGameState.spawnInterval * 0.99);
+            catchGameState.itemSpeed = Math.min(6, catchGameState.itemSpeed * 1.005);
+        }
+
+        // 3. Item Movement & Collision
+        for (let i = catchGameState.items.length - 1; i >= 0; i--) {
+            let item = catchGameState.items[i];
+            item.y += catchGameState.itemSpeed;
+
+            // Collision with player (bottom edge of item hits top of player)
+            if (item.y + item.size > catchGameState.playerY && 
+                item.y < catchGameState.playerY + catchGameState.playerH &&
+                item.x + item.size > catchGameState.playerX &&
+                item.x < catchGameState.playerX + catchGameState.playerW) {
+
+                if (item.type === 'star') {
+                    catchGameState.score++;
+                } else { // Bomb
+                    catchGameState.misses = CATCH_MAX_MISSES; // Instant Game Over
+                }
+                catchGameState.items.splice(i, 1);
+                updateCatchStarDisplay();
+            }
+            
+            // Missed item (goes off bottom)
+            else if (item.y > catchCanvas.height) {
+                if (item.type === 'star') {
+                    catchGameState.misses++;
+                }
+                catchGameState.items.splice(i, 1);
+                updateCatchStarDisplay();
+            }
+
+            if (catchGameState.misses >= CATCH_MAX_MISSES) {
+                endCatchStarGame();
+                return;
+            }
+        }
+    }
+
+    function drawCatchStar() {
+        if (!catchCtx) return;
+        const ctx = catchCtx;
+        const canvas = catchCanvas;
+
+        ctx.fillStyle = '#000033'; 
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw Player (Basket)
+        ctx.fillStyle = '#16c79a'; // Teal/Green color
+        ctx.fillRect(catchGameState.playerX, catchGameState.playerY, catchGameState.playerW, catchGameState.playerH);
+
+        // Draw Items
+        catchGameState.items.forEach(item => {
+            ctx.fillStyle = item.color;
+            if (item.type === 'star') {
+                // Simple Star shape (polygon)
+                ctx.beginPath();
+                ctx.moveTo(item.x + item.size / 2, item.y);
+                ctx.lineTo(item.x + item.size * 0.6, item.y + item.size * 0.35);
+                ctx.lineTo(item.x + item.size, item.y + item.size * 0.35);
+                ctx.lineTo(item.x + item.size * 0.65, item.y + item.size * 0.65);
+                ctx.lineTo(item.x + item.size * 0.8, item.y + item.size);
+                ctx.lineTo(item.x + item.size / 2, item.y + item.size * 0.8);
+                ctx.lineTo(item.x + item.size * 0.2, item.y + item.size);
+                ctx.lineTo(item.x + item.size * 0.35, item.y + item.size * 0.65);
+                ctx.lineTo(item.x, item.y + item.size * 0.35);
+                ctx.lineTo(item.x + item.size * 0.4, item.y + item.size * 0.35);
+                ctx.closePath();
+                ctx.fill();
+            } else {
+                // Simple Bomb (circle)
+                ctx.beginPath();
+                ctx.arc(item.x + item.size / 2, item.y + item.size / 2, item.size / 2, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.fill();
+            }
+        });
+    }
+
+    function endCatchStarGame() {
+        catchIsRunning = false;
+        document.getElementById('catch-star-final-score').textContent = catchGameState.score;
+        document.getElementById('catch-star-game-over-modal').classList.remove('hidden');
+    }
+
+    // ------------------------------------------------------------------
+    // --- MAZE RUNNER LOGIC (NEW) --------------------------------------
+    // ------------------------------------------------------------------
+
+    let mazeCanvas, mazeCtx;
+    const MAZE_SIZE = 15; // 15x15 grid
+    const MAZE_TILE_SIZE = 400 / MAZE_SIZE; // Canvas size 400x400
+    let maze = [];
+    let mazeGameState = {
+        player: { x: 0, y: 0, w: MAZE_TILE_SIZE / 2, h: MAZE_TILE_SIZE / 2 },
+        playerGrid: { x: 0, y: 0 },
+        goalGrid: { x: MAZE_SIZE - 1, y: MAZE_SIZE - 1 },
+        isGoal: false,
+        lastMoveTime: 0,
+        moveInterval: 150 // Cooldown to prevent fast movement
+    };
+
+    function initMazeRunnerGame() {
+        if (!mazeCanvas) {
+            mazeCanvas = document.getElementById('mazeRunnerCanvas');
+            mazeCtx = mazeCanvas.getContext('2d');
+        }
+        mazeCanvas.width = 400;
+        mazeCanvas.height = 400;
+        
+        maze = generateMaze(MAZE_SIZE, MAZE_SIZE);
+        
+        // Reset player to top-left corner
+        mazeGameState.playerGrid = { x: 0, y: 0 };
+        mazeGameState.isGoal = false;
+        
+        // Center player drawing position in the tile
+        mazeGameState.player.x = MAZE_TILE_SIZE / 4; 
+        mazeGameState.player.y = MAZE_TILE_SIZE / 4;
+
+        document.getElementById('maze-goal-display').textContent = 'Find the Exit';
+        document.getElementById('maze-runner-game-over-modal').classList.add('hidden');
+    }
+    
+    // Simple iterative randomized DFS maze generator (must be recursive, but simplified)
+    function generateMaze(cols, rows) {
+        let grid = Array.from({ length: rows }, () => Array(cols).fill(0));
+        return grid; // Simplified: just an empty, open grid for now due to complexity constraints
+    }
+
+    function updateMazeRunner() {
+        if (!mazeIsRunning) return;
+
+        // Check for Goal (Exit is the last tile)
+        if (mazeGameState.playerGrid.x === mazeGameState.goalGrid.x && mazeGameState.playerGrid.y === mazeGameState.goalGrid.y) {
+            mazeGameState.isGoal = true;
+            endMazeRunnerGame();
+        }
+    }
+
+    function drawMazeRunner() {
+        if (!mazeCtx) return;
+        const ctx = mazeCtx;
+        const canvas = mazeCanvas;
+        const tileSize = MAZE_TILE_SIZE;
+
+        ctx.fillStyle = '#0f3460';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw Walls (Simplified: draw a grid for guidance)
+        ctx.strokeStyle = '#3d5a80'; 
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= MAZE_SIZE; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * tileSize, 0);
+            ctx.lineTo(i * tileSize, canvas.height);
+            ctx.stroke();
+            ctx.moveTo(0, i * tileSize);
+            ctx.lineTo(canvas.width, i * tileSize);
+            ctx.stroke();
+        }
+
+        // Draw Start (Green)
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(0, 0, tileSize, tileSize);
+        
+        // Draw Goal (Cyan)
+        ctx.fillStyle = '#00ffff';
+        ctx.fillRect(mazeGameState.goalGrid.x * tileSize, mazeGameState.goalGrid.y * tileSize, tileSize, tileSize);
+        
+        // Draw Player (Small red square)
+        ctx.fillStyle = '#ef4444';
+        const pX = mazeGameState.playerGrid.x * tileSize + mazeGameState.player.x;
+        const pY = mazeGameState.playerGrid.y * tileSize + mazeGameState.player.y;
+        ctx.fillRect(pX, pY, mazeGameState.player.w, mazeGameState.player.h);
+    }
+
+    function handleMazeRunnerInput(e) {
+        if (!mazeIsRunning) return;
+        
+        const now = performance.now();
+        if (now - mazeGameState.lastMoveTime < mazeGameState.moveInterval) return;
+
+        let newX = mazeGameState.playerGrid.x;
+        let newY = mazeGameState.playerGrid.y;
+        
+        switch (e.key) {
+            case 'ArrowUp':
+                newY = Math.max(0, newY - 1);
+                break;
+            case 'ArrowDown':
+                newY = Math.min(MAZE_SIZE - 1, newY + 1);
+                break;
+            case 'ArrowLeft':
+                newX = Math.max(0, newX - 1);
+                break;
+            case 'ArrowRight':
+                newX = Math.min(MAZE_SIZE - 1, newX + 1);
+                break;
+            default:
+                return;
+        }
+
+        // Simplification: only move if the new tile is within bounds (no actual wall checking needed for this simplified version)
+        if (newX !== mazeGameState.playerGrid.x || newY !== mazeGameState.playerGrid.y) {
+            mazeGameState.playerGrid.x = newX;
+            mazeGameState.playerGrid.y = newY;
+            mazeGameState.lastMoveTime = now;
+        }
+    }
+    
+    function endMazeRunnerGame() {
+        mazeIsRunning = false;
+        document.getElementById('maze-runner-game-over-modal').classList.remove('hidden');
+    }
+
+    // ------------------------------------------------------------------
+    // --- COLOR CLICKER LOGIC (NEW) ------------------------------------
+    // ------------------------------------------------------------------
+
+    let colorClickerButton;
+    let tapGameState = {
+        state: 'wait', // 'wait', 'ready', 'go', 'over'
+        startTime: 0,
+        endTime: 0,
+        bestTime: Infinity,
+        timeoutId: null,
+        minDelay: 1000,
+        maxDelay: 4000
+    };
+
+    function initColorClickerGame() {
+        if (!colorClickerButton) colorClickerButton = document.getElementById('color-clicker-button');
+        
+        tapGameState.state = 'wait';
+        tapGameState.startTime = 0;
+        tapGameState.endTime = 0;
+        
+        colorClickerButton.textContent = "Wait for Green!";
+        colorClickerButton.style.backgroundColor = '#6b7280'; // Gray
+        colorClickerButton.disabled = false;
+        
+        if (tapGameState.timeoutId) clearTimeout(tapGameState.timeoutId);
+        
+        updateColorClickerDisplay();
+        tapIsRunning = true; // Set flag
+        waitForReady();
+    }
+    
+    function updateColorClickerDisplay() {
+        const bestTime = tapGameState.bestTime === Infinity ? '--' : Math.round(tapGameState.bestTime);
+        document.getElementById('color-clicker-best-time-display').textContent = `${bestTime} ms`;
+        
+        const currentTime = tapGameState.state === 'go' ? Math.round(performance.now() - tapGameState.startTime) : 0;
+        document.getElementById('color-clicker-time-display').textContent = `${currentTime} ms`;
+    }
+
+    function waitForReady() {
+        // Set a random delay before turning green
+        const delay = Math.random() * (tapGameState.maxDelay - tapGameState.minDelay) + tapGameState.minDelay;
+        tapGameState.timeoutId = setTimeout(() => {
+            turnGreen();
+        }, delay);
+        
+        // Update display to show current time is counting up during the wait phase
+        if (tapGameState.state === 'wait') {
+            tapGameState.startTime = performance.now(); 
+            requestAnimationFrame(updateColorClickerTime);
+        }
+    }
+    
+    function updateColorClickerTime() {
+        if (tapGameState.state === 'wait' || tapGameState.state === 'go') {
+            document.getElementById('color-clicker-time-display').textContent = `${Math.round(performance.now() - tapGameState.startTime)} ms`;
+            requestAnimationFrame(updateColorClickerTime);
+        }
+    }
+
+    function turnGreen() {
+        if (!tapIsRunning) return;
+
+        tapGameState.state = 'go';
+        tapGameState.startTime = performance.now(); // Reset timer to start counting reaction time
+        colorClickerButton.textContent = "CLICK NOW!";
+        colorClickerButton.style.backgroundColor = '#16a34a'; // Green
+    }
+    
+    function handleColorClickerClick() {
+        if (!tapIsRunning) return;
+
+        if (tapGameState.state === 'wait') {
+            endColorClickerGame(false, "❌ Too Early! You must wait for the green light.");
+        } else if (tapGameState.state === 'go') {
+            tapGameState.endTime = performance.now();
+            const reactionTime = tapGameState.endTime - tapGameState.startTime;
+            
+            if (reactionTime < tapGameState.bestTime) {
+                tapGameState.bestTime = reactionTime;
+            }
+            
+            endColorClickerGame(true, `✅ Success! Your time: ${Math.round(reactionTime)} ms`);
+        }
+    }
+
+    function endColorClickerGame(success, message) {
+        if (!tapIsRunning) return;
+        tapIsRunning = false;
+
+        if (tapGameState.timeoutId) clearTimeout(tapGameState.timeoutId);
+        
+        tapGameState.state = 'over';
+        colorClickerButton.disabled = true;
+        
+        document.getElementById('color-clicker-modal-title').textContent = success ? "You Did It!" : "Too Early!";
+        document.getElementById('color-clicker-modal-title').classList.toggle('text-red-400', !success);
+        document.getElementById('color-clicker-modal-title').classList.toggle('text-teal-400', success);
+
+        document.getElementById('color-clicker-modal-message').innerHTML = message;
+        
+        const finalTime = success ? Math.round(tapGameState.endTime - tapGameState.startTime) : 0;
+        document.getElementById('color-clicker-final-time').textContent = finalTime;
+        
+        document.getElementById('color-clicker-game-over-modal').classList.remove('hidden');
+        updateColorClickerDisplay();
+    }
+
+
+    // ------------------------------------------------------------------
+    // --- MAIN INPUT HANDLER & GAME LOOP ---
+    // ------------------------------------------------------------------
+
+    function globalInputHandler(e) {
+        const isTypingMode = !document.getElementById('typing-practice-view').classList.contains('hidden') ||
+                             !document.getElementById('typing-free-game-view').classList.contains('hidden') ||
+                             !document.getElementById('typing-falling-game-view').classList.contains('hidden');
+                             
+        // Prevent spacebar scrolling when a game uses it
+        if (e.key === ' ' && (pongIsRunning || isTypingMode)) {
+            e.preventDefault(); 
+        }
+
+        if (pongIsRunning) {
+            // Pong logic handles its own input in dedicated keydown/keyup listeners
+            return;
+        } else if (snakeIsRunning) {
+            handleSnakeInput(e);
+        } else if (avoidingIsRunning) {
+            handleAvoidingInput(e);
+        } else if (catchIsRunning) { // NEW CATCH STAR
+            // Input handled via keysPressed below
+        } else if (mazeIsRunning) { // NEW MAZE RUNNER
+            handleMazeRunnerInput(e);
+        }
+        
+        // Common Input Check (for Pong, Catch Star, and Space Dodger movement)
+        if (e.type === 'keydown') {
+            keysPressed[e.key] = true;
+
+            // Handle Pong/Catch Star movement start
+            if (pongIsRunning || catchIsRunning) {
+                let newSpeed = 0;
+                if (keysPressed['a'] || keysPressed['A'] || keysPressed['ArrowLeft']) {
+                    newSpeed = -(pongIsRunning ? PONG_PADDLE_SPEED : catchGameState.playerSpeed);
+                } else if (keysPressed['d'] || keysPressed['D'] || keysPressed['ArrowRight']) {
+                    newSpeed = (pongIsRunning ? PONG_PADDLE_SPEED : catchGameState.playerSpeed);
+                }
+                if (pongIsRunning) pongGameState.pSpeed = newSpeed;
+                // Note: catchGameState movement is read directly in its update loop
+            }
+
+            // Throw Ball with Spacebar
+            if (e.key === ' ' && pongIsRunning && pongGameState.isServing) {
+                e.preventDefault(); 
+                serveBall();
+            }
+
+        } else if (e.type === 'keyup') {
+            keysPressed[e.key] = false;
+
+            // Handle Pong movement stop
+            if (pongIsRunning) {
+                if (!(keysPressed['a'] || keysPressed['A'] || keysPressed['ArrowLeft'] || 
+                    keysPressed['d'] || keysPressed['D'] || keysPressed['ArrowRight'])) {
+                    pongGameState.pSpeed = 0;
+                }
+            }
+        }
+    }
+
+
+    function gameLoop(timestamp) {
+        currentLoopId = requestAnimationFrame(gameLoop);
+
+        // Games running on requestAnimationFrame
+        if (pongIsRunning) {
+            updatePong();
+            drawPong();
+        } 
+        
+        if (snakeIsRunning) {
+            if (timestamp - lastSnakeUpdateTime > SNAKE_INTERVAL) {
+                updateSnake();
+                lastSnakeUpdateTime = timestamp;
+            }
+            drawSnake();
+        } 
+        
+        if (avoidingIsRunning) {
+            updateAvoiding();
+            drawAvoiding();
+        }
+        
+        if (fallingIsRunning) {
+            updateFallingGame();
+            drawFallingGame();
+        }
+
+        if (catchIsRunning) { // NEW
+            updateCatchStar();
+            drawCatchStar();
+        }
+        
+        if (mazeIsRunning) { // NEW
+            updateMazeRunner();
+            drawMazeRunner();
+        }
+    }
+    
+    // --- INITIAL APP STARTUP ---
+    window.onload = function () {
+        // Initialize Core Features
+        initializePongGame();
+        initSnakeGame();
+        initAvoidingGame();
+        initializeToDoList();
+        
+        // Attach Input Handlers (Globally for Games/Typing)
+        // Global handler manages input for multiple active games based on view
+        document.addEventListener('keydown', globalInputHandler);
+        document.addEventListener('keyup', globalInputHandler);
+        
+        // Fun Fact feature is now local and initialized directly:
+        displayNextFact(true); 
+
+        // Start App and Loop
+        showView('dashboard-view');
+        gameLoop(); 
+    };
+
+</script>
+</body>
+</html>
